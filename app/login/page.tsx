@@ -12,13 +12,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
-  const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setErrorMessage('');
     setSuccessMessage('');
 
@@ -33,16 +31,21 @@ export default function LoginPage() {
         }),
       });
       // Try to parse JSON; if HTML is returned (e.g., from Next.js), throw a readable error
-      let data: any = null;
+      interface LoginResponse {
+        access_token: string;
+        user?: Record<string, unknown>;
+        message?: string;
+      }
+      let data: LoginResponse | null = null;
       const contentType = res.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
-        data = await res.json();
+        data = await res.json() as LoginResponse;
       } else {
         const text = await res.text();
         throw new Error(`Unexpected response format: ${contentType}. Body starts with: ${text.slice(0, 100)}...`);
       }
 
-      if (res.ok) {
+      if (res.ok && data) {
         // Store JWT for protected actions
         localStorage.setItem("token", data.access_token);
         // Optionally store user info if provided
@@ -56,10 +59,9 @@ export default function LoginPage() {
         const msg = data?.message || `HTTP ${res.status} ${res.statusText}`;
         throw new Error(msg);
       }
-    } catch (err: any) {
-      setErrorMessage(err.message);
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setErrorMessage(errorMsg);
     }
   };
 
@@ -96,9 +98,9 @@ export default function LoginPage() {
           </div>
 
           <div className="flex items-center gap-3 mb-6">
-            <div className="flex-grow border-t border-gray-200"></div>
+            <div className="grow border-t border-gray-200"></div>
             <div className="text-sm text-gray-400">Ou</div>
-            <div className="flex-grow border-t border-gray-200"></div>
+            <div className="grow border-t border-gray-200"></div>
           </div>
 
           {errorMessage && <div className="mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded-md text-sm">{errorMessage}</div>}
