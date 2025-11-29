@@ -12,9 +12,9 @@ const Footer: React.FC = () => {
         {/* Brand + Short */}
         <div className="space-y-4">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center text-green-900 font-bold">AG</div>
+            <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center text-green-900 font-bold">GC</div>
             <div>
-              <h3 className="text-2xl font-extrabold">AgriConnect</h3>
+              <h3 className="text-2xl font-extrabold">GreenConnect</h3>
               <p className="text-sm text-green-200">Lier les acteurs de l'agriculture tunisienne.</p>
             </div>
           </div>
@@ -22,7 +22,7 @@ const Footer: React.FC = () => {
           <p className="text-sm text-green-100">Connectez, vendez et investissez localement. Platforme pour la croissance durable.</p>
 
           <div className="flex items-center space-x-3">
-            <a href="mailto:support@agriconnect.tn" className="text-sm text-green-200 hover:underline">support@agriconnect.tn</a>
+            <a href="mailto:support@greenconnect.tn" className="text-sm text-green-200 hover:underline">support@greenconnect.tn</a>
             <span className="text-green-600">•</span>
             <a href="tel:+21620000000" className="text-sm text-green-200 hover:underline">+216 20 000 000</a>
           </div>
@@ -65,7 +65,7 @@ const Footer: React.FC = () => {
 
       <div className="border-t border-green-800/60 mt-6">
         <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col md:flex-row items-center justify-between text-sm text-green-200">
-          <div>© {new Date().getFullYear()} AgriConnect — Tous droits réservés.</div>
+          <div>© {new Date().getFullYear()} GreenConnect — Tous droits réservés.</div>
           <div className="flex items-center space-x-4 mt-3 md:mt-0">
             <Link href="/privacy" className="hover:underline">Privacy</Link>
             <Link href="/terms" className="hover:underline">Terms</Link>

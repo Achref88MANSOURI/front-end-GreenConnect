@@ -7,6 +7,7 @@ export type Product = {
   description?: string;
   // Optional extended fields
   seller?: string;
+  userId?: number; // mapped from backend farmerId or farmer.id
   contact?: string; // phone or email
   stock?: number; // available quantity
   unit?: string; // unit for stock (e.g., kg, ton)
