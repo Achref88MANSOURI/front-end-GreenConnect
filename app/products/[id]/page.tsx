@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { products } from '../../data/products';
@@ -12,14 +13,14 @@ export default function ProductDetailsPage({ params }: Props) {
   const id = parseInt(params.id, 10);
   const product = products.find(p => p.id === id);
 
-  // Produit non trouvé
+  // Produit non trouve
   if (!product) {
     return (
       <>
         <Header />
         <main className="max-w-4xl mx-auto p-6">
           <h2 className="text-2xl font-bold">Produit introuvable</h2>
-          <p className="mt-4">Le produit demandé n'existe pas.</p>
+          <p className="mt-4">Le produit demande n&apos;existe pas.</p>
           <Link href="/marketplace" className="mt-4 inline-block text-green-600 underline">Retour au catalogue</Link>
         </main>
         <Footer />
@@ -27,7 +28,7 @@ export default function ProductDetailsPage({ params }: Props) {
     );
   }
 
-  // Affichage détaillé produit
+  // Affichage detaille produit
   return (
     <>
       <Header />
@@ -35,7 +36,7 @@ export default function ProductDetailsPage({ params }: Props) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-1 bg-gray-100 h-64 flex items-center justify-center">
             {product.image ? (
-              <img src={product.image} alt={product.name} className="max-h-64 object-cover" />
+              <Image src={product.image} alt={product.name} width={256} height={256} className="max-h-64 object-cover" />
             ) : (
               <div className="text-gray-500">No image</div>
             )}
@@ -53,7 +54,7 @@ export default function ProductDetailsPage({ params }: Props) {
               {product.stock !== undefined && product.unit && (
                 <p><strong>Stock disponible :</strong> {product.stock} {product.unit}</p>
               )}
-              {product.harvestDate && <p><strong>Date de récolte :</strong> {product.harvestDate}</p>}
+              {product.harvestDate && <p><strong>Date de recolte :</strong> {product.harvestDate}</p>}
               {product.certifications && (
                 <p><strong>Certifications :</strong> {product.certifications.join(', ')}</p>
               )}
