@@ -12,7 +12,6 @@ export default function RegisterPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [address, setAddress] = useState('');
   const [password, setPassword] = useState('');
-  const [accountType, setAccountType] = useState('farmer');
   const [showPassword, setShowPassword] = useState(false);
   const [agree, setAgree] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -49,7 +48,6 @@ export default function RegisterPage() {
         name: fullName,
         email,
         password,
-        role: accountType,
         phoneNumber: phoneNumber,
         address: address
       }),
@@ -124,8 +122,6 @@ export default function RegisterPage() {
               <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
               <input id="address" value={address} onChange={e => setAddress(e.target.value)} type="text" placeholder="Votre adresse complète" required className="block w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" />
             </div>
-
-            {/* Hidden default role maintained for backend compatibility */}
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
