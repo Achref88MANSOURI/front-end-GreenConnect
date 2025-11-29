@@ -14,11 +14,13 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
+    setLoading(true);
 
     try {
       // Call backend API directly
@@ -62,6 +64,8 @@ export default function LoginPage() {
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       setErrorMessage(errorMsg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -71,50 +75,10 @@ export default function LoginPage() {
       <div className="pointer-events-none absolute -top-32 -left-32 h-80 w-80 rounded-full bg-green-200 blur-3xl opacity-40" />
       <div className="pointer-events-none absolute -bottom-32 -right-32 h-80 w-80 rounded-full bg-yellow-200 blur-3xl opacity-40" />
 
-<<<<<<< HEAD
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-10 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
           {/* Brand / Visual side */}
           <div className="hidden md:flex flex-col justify-between rounded-2xl p-8 bg-gradient-to-br from-green-700 to-emerald-600 text-white shadow-xl">
-=======
-        {/* Left illustration (hidden on small screens) */}
-        <div className="hidden md:block md:w-1/2 bg-green-700 p-8">
-          <div className="h-full w-full bg-[url('/images/agriculture-tech-hero.jpg')] bg-cover bg-center rounded-l-2xl opacity-95" aria-hidden="true" />
-        </div>
-
-        {/* Right: form */}
-        <div className="w-full md:w-1/2 p-8">
-          <div className="text-center mb-6">
-            <div className="mx-auto w-14 h-14 bg-yellow-400 rounded-full flex items-center justify-center text-green-900 font-bold text-lg">AG</div>
-            <h2 className="text-2xl md:text-3xl font-extrabold text-green-800 mt-4">Bienvenue</h2>
-            <p className="mt-2 text-sm text-gray-600">Connectez-vous pour accéder à Souk-Moussel, Faza’et-Ard, Tawssel et plus.</p>
-          </div>
-
-          {/* Social login buttons */}
-          <div className="flex gap-3 mb-4">
-            <button className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 border rounded-md bg-white text-sm hover:shadow transition">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M21 12.2c0-.7-.1-1.4-.3-2H12v3.8h5.5c-.2 1.2-.9 2.2-1.9 2.9v2.4h3.1c1.8-1.6 2.8-4 2.8-7.1z" fill="#4285F4"/><path d="M12 22c2.7 0 4.9-.9 6.5-2.5l-3.1-2.4c-.8.6-1.9 1-3.4 1-2.6 0-4.8-1.7-5.6-4.1H3.2v2.6C4.8 19.8 8.1 22 12 22z" fill="#34A853"/><path d="M6.4 13.9A6.9 6.9 0 0 1 6 12c0-.6.1-1.2.2-1.7V7.7H3.2A10 10 0 0 0 2 12c0 1.6.4 3.2 1.2 4.6l3.2-2.7z" fill="#FBBC05"/><path d="M12 6.4c1.4 0 2.6.5 3.6 1.6l2.7-2.7C16.8 3.4 14.7 2.5 12 2.5 8.1 2.5 4.8 4.7 3.2 7.7l3.2 2.6c.8-2.4 3-4.4 5.6-4.4z" fill="#EA4335"/></svg>
-              <span>Google</span>
-            </button>
-            <button className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 border rounded-md bg-blue-600 text-white text-sm hover:shadow transition">
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M22 12c0-5.5-4.5-10-10-10S2 6.5 2 12c0 4.99 3.66 9.12 8.44 9.88v-6.99H7.9v-2.89h2.54V9.8c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.77l-.44 2.89h-2.33v6.99C18.34 21.12 22 16.99 22 12z"/></svg>
-              <span>Facebook</span>
-            </button>
-          </div>
-
-          <div className="flex items-center gap-3 mb-6">
-            <div className="grow border-t border-gray-200"></div>
-            <div className="text-sm text-gray-400">Ou</div>
-            <div className="grow border-t border-gray-200"></div>
-          </div>
-
-          {errorMessage && <div className="mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded-md text-sm">{errorMessage}</div>}
-          {successMessage && <div className="mb-4 p-3 bg-green-50 text-green-700 border border-green-200 rounded-md text-sm">{successMessage}</div>}
-
-          {/* --- Login Form --- */}
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            {/* Email Field */}
->>>>>>> 79e8142e936f37c4766c7a25721f70f7680a54af
             <div>
               <div className="inline-flex items-center justify-center w-14 h-14 bg-yellow-400 text-green-900 rounded-xl font-extrabold text-lg shadow">GC</div>
               <h2 className="mt-6 text-3xl font-extrabold leading-tight">GreenConnect</h2>
