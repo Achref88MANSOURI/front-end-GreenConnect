@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -17,6 +17,24 @@ export default function CreateProductPage() {
     category: 'Vegetables',
     image: null as File | null,
   });
+  const [currentUserName, setCurrentUserName] = useState<string>('');
+
+  // On mount, derive vendeur from stored user info
+  useEffect(() => {
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+      if (raw) {
+        const user = JSON.parse(raw);
+        const name: string = user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
+        if (name) {
+          setCurrentUserName(name);
+          setFormData(prev => ({ ...prev, vendeur: name }));
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to derive user name for vendeur', e);
+    }
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -54,7 +72,9 @@ export default function CreateProductPage() {
       data.append('title', formData.title);
       data.append('description', formData.description);
       data.append('price', formData.price);
-      if (formData.vendeur) data.append('vendeur', formData.vendeur);
+      // Force vendeur to authenticated user's name regardless of form input
+      const vendeurFinal = currentUserName || formData.vendeur;
+      if (vendeurFinal) data.append('vendeur', vendeurFinal);
       data.append('location', formData.location);
       data.append('phoneNumber', formData.phoneNumber);
       // Note: 'category' is not in the backend DTO, so we might skip it or add it if the backend is updated.
@@ -162,11 +182,14 @@ export default function CreateProductPage() {
                 type="text"
                 name="vendeur"
                 id="vendeur"
-                className="mt-1 block w-full px-4 py-3 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm"
-                placeholder="e.g., Oasis Agro"
+                readOnly
+                className="mt-1 block w-full px-4 py-3 rounded-md border bg-gray-100 border-gray-300 shadow-sm sm:text-sm cursor-not-allowed"
+                placeholder="Nom de l'utilisateur"
                 value={formData.vendeur}
-                onChange={handleChange}
               />
+              {!currentUserName && (
+                <p className="text-xs text-gray-500 mt-1">Connectez-vous pour associer votre nom au produit.</p>
+              )}
             </div>
 
             <div>

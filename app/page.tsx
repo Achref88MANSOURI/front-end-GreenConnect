@@ -61,7 +61,7 @@ const featuresData = [
 // --- DATA FOR TESTIMONIALS ---
 const testimonialsData = [
   {
-    quote: "AgriConnect a transformé la façon dont nous vendons nos récoltes. Nous avons réduit nos coûts logistiques de 20%!",
+    quote: "GreenConnect a transformé la façon dont nous vendons nos récoltes. Nous avons réduit nos coûts logistiques de 20%!",
     author: "Fatma B.",
     role: "Agricultrice à Béja",
   },
@@ -97,7 +97,7 @@ export default function HomePage() {
           
           <div className="relative z-10 p-8 max-w-6xl mx-auto text-white text-left">
             <span className="text-md font-semibold text-green-300 uppercase tracking-widest mb-3 block">
-                AgriConnect : L'avenir de l'Agri-Tech en Tunisie
+                GreenConnect : L'avenir de l'Agri-Tech en Tunisie
             </span>
             <h1 className="text-6xl md:text-7xl font-extrabold mb-6 leading-tight">
               Devenez l'acteur de la <span className="text-green-400">Révolution Agricole</span> Tunisienne
@@ -162,7 +162,7 @@ export default function HomePage() {
         <section className="py-20 px-4 bg-white">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-4xl font-extrabold text-center mb-16 text-gray-900">
-              Pourquoi choisir AgriConnect ?
+              Pourquoi choisir GreenConnect ?
             </h2>
             <div className="grid md:grid-cols-3 gap-12 text-center">
         {featuresData.map((feature) => {
@@ -254,7 +254,7 @@ export default function HomePage() {
                 Prêt à Transformer Votre Exploitation ?
               </h2>
               <p className="text-xl text-green-200 mb-8">
-                Rejoignez des centaines d'agriculteurs et d'investisseurs qui optimisent déjà leur potentiel avec AgriConnect.
+                Rejoignez des centaines d'agriculteurs et d'investisseurs qui optimisent déjà leur potentiel avec GreenConnect.
               </p>
               <Link 
                 href="/register" 
