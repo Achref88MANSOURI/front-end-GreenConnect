@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { MapPin, Phone, User, Calendar, ArrowRight, ShoppingBag } from 'lucide-react';
 import type { Product } from '../data/products';
+import { API_BASE_URL } from '../../src/api-config';
 
 const truncate = (s?: string, n = 100) => (s && s.length > n ? s.slice(0, n) + '…' : s || '');
 
@@ -15,7 +16,28 @@ const formatDate = (iso?: string) => {
 };
 
 export default function ProductCard({ id, name, price, location, image, description, seller, createdAt, contact, userId }: Product) {
-  const addToCart = () => {
+  const addToCart = async () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    
+    if (token) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/cart/items`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ productId: id, quantity: 1 })
+        });
+        if (res.ok) {
+          alert('Produit ajouté au panier');
+          return;
+        }
+      } catch (e) {
+        console.error('Failed to add to cart via API', e);
+      }
+    }
+
     try {
       const existing = typeof window !== 'undefined' ? localStorage.getItem('cart') : null;
       const cart = existing ? JSON.parse(existing) : [];

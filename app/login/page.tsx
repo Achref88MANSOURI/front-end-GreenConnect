@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { API_BASE_URL } from '../../src/api-config';
 
 // Define the Login Page Component
 export default function LoginPage() {
@@ -24,7 +25,7 @@ export default function LoginPage() {
 
     try {
       // Call backend API directly
-      const res = await fetch("http://localhost:5000/auth/login", {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

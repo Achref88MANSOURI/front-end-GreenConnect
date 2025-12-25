@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { API_BASE_URL } from '../../src/api-config';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -37,7 +38,7 @@ export default function ProfilePage() {
         const token = userData.access_token || localStorage.getItem('token');
 
         if (token) {
-          fetch(`http://localhost:5000/users/profile`, {
+          fetch(`${API_BASE_URL}/users/profile`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -108,6 +109,20 @@ export default function ProfilePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
               Modifier
+            </Link>
+          </div>
+          <div className="flex flex-wrap gap-3 mb-6">
+            <Link 
+              href="/investments/mine" 
+              className="px-4 py-2 border border-green-600 text-green-700 rounded-md hover:bg-green-50 transition text-sm font-medium"
+            >
+              📈 Mes Investissements
+            </Link>
+            <Link 
+              href="/deliveries" 
+              className="px-4 py-2 border border-green-600 text-green-700 rounded-md hover:bg-green-50 transition text-sm font-medium"
+            >
+              🚚 Mes Livraisons
             </Link>
           </div>
           

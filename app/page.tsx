@@ -1,79 +1,12 @@
+/* eslint-disable react/no-unescaped-entities */
 // app/page.tsx
 import Link from 'next/link';
 import Image from 'next/image';
-import Header from './components/Header'; // Assurez-vous d'avoir ce composant
-import Footer from './components/Footer'; // Assurez-vous d'avoir ce composant
-import ModuleCard from './components/ModuleCard'; // Le composant ModuleCard corrigé
-import TestimonialCard from './components/TestimonialCard'; // Assurez-vous d'avoir ce composant
-import React from 'react';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import ModuleCard from './components/ModuleCard';
+import { modulesData, featuresData, testimonialsData } from './data/home-content';
 
-// --- PLACEHOLDERS POUR LES ICÔNES (Supposons qu'ils sont des composants SVG) ---
-// Ces composants doivent exister dans './components/icons/FeatureIcons'
-const PriceTransparencyIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 22h20L12 2zm1 14h-2v-2h2v2zm0-4h-2V8h2v4z"/></svg>;
-const SecurityCheckIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 15.5l-3.5-3.5 1.5-1.5 2 2 4-4 1.5 1.5-5.5 5.5z"/></svg>;
-const LocalSustainabilityIcon = (props: React.SVGProps<SVGSVGElement>) => <svg {...props} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15.75L7.75 14.5l1.41-1.41L11 15.93l4.84-4.84 1.41 1.41-6.25 6.25z"/></svg>;
-
-
-// --- DATA FOR CORE MODULES ---
-const modulesData = [
-  { 
-    title: "Souk-Moussel (Marketplace)", 
-    description: "Achetez et vendez des produits agricoles frais et des fournitures. Connectez-vous directement avec les acheteurs et les vendeurs, sans intermédiaires inutiles.", 
-    image: "/images/module-marketplace.png", 
-    alt: "Icône de marché et panier",
-    ctaLink: "/marketplace" 
-  },
-  { 
-    title: "Faza’et-Ard (Partage & Investissement)", 
-    description: "Partagez l'équipement agricole inutilisé et explorez de nouvelles opportunités d'investissement durables dans le secteur agricole tunisien.", 
-    image: "/images/module-investment.png", 
-    alt: "Icône de tracteur et partage",
-    ctaLink: "/investments" 
-  },
-  { 
-    title: "Tawssel (Logistique)", 
-    description: "Simplifiez la logistique en trouvant des transporteurs de confiance, en optimisant les itinéraires et en suivant vos envois en temps réel.", 
-    image: "/images/module-logistics.png", 
-    alt: "Icône de camion et logistique",
-    ctaLink: "/carriers" 
-  },
-];
-
-// --- DATA FOR FEATURES/BENEFITS ---
-const featuresData = [
-  { 
-    icon: PriceTransparencyIcon,
-    title: 'Transparence des Prix', 
-    description: 'Accédez à des données de marché en temps réel pour des décisions de vente et d\'achat éclairées.',
-  },
-  { 
-    icon: SecurityCheckIcon,
-    title: 'Fiabilité et Sécurité', 
-    description: 'Système d\'évaluation pour assurer des transactions sécurisées et des partenariats de confiance.',
-  },
-  { 
-    icon: LocalSustainabilityIcon,
-    title: 'Durabilité Locale', 
-    description: 'Soutenez l\'agriculture locale en réduisant les chaînes d\'approvisionnement et l\'empreinte carbone.',
-  },
-];
-
-// --- DATA FOR TESTIMONIALS ---
-const testimonialsData = [
-  {
-    quote: "GreenConnect a transformé la façon dont nous vendons nos récoltes. Nous avons réduit nos coûts logistiques de 20%!",
-    author: "Fatma B.",
-    role: "Agricultrice à Béja",
-  },
-  {
-    quote: "J'ai pu investir dans de nouvelles technologies grâce à une opportunité partagée sur Faza'et-Ard. Un véritable coup de pouce pour mon exploitation.",
-    author: "Ahmed Z.",
-    role: "Agri-entrepreneur",
-  },
-];
-
-
-// --- HOMEPAGE COMPONENT ---
 export default function HomePage() {
   return (
     <>
