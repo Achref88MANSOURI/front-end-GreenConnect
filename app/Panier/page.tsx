@@ -4,7 +4,8 @@
 // Page Panier unifiée (Single File) - Contient tout le code nécessaire pour l'affichage du panier, 
 // y compris les composants Header, Footer et CartClient pour éviter les erreurs d'import.
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../src/api-config';
 
 // --- Composant Header Factice (Simulé) ---
 const Header = () => (
@@ -46,21 +47,51 @@ interface CartItem {
 
 function CartClient() {
         // Hydrate from localStorage
-        const [cartItems, setCartItems] = useState<CartItem[]>(() => {
-            try {
-                const raw = typeof window !== 'undefined' ? localStorage.getItem('cart') : null;
-                return raw ? JSON.parse(raw) : [];
-            } catch {
-                return [];
-            }
-        });
+    const [cartItems, setCartItems] = useState<CartItem[]>([]);
+    const [loading, setLoading] = useState(true);
 
-        // Keep localStorage in sync
-        React.useEffect(() => {
+    useEffect(() => {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if (token) {
+            fetch(`${API_BASE_URL}/cart`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.items) {
+                    const mapped = data.items.map((item: any) => ({
+                        id: item.id,
+                        name: item.product.title,
+                        price: Number(item.product.price),
+                        quantity: item.quantity,
+                        imageUrl: item.product.imageUrl ? `${API_BASE_URL}/uploads/${item.product.imageUrl}` : ''
+                    }));
+                    setCartItems(mapped);
+                }
+                setLoading(false);
+            })
+            .catch(e => {
+                console.error(e);
+                setLoading(false);
+            });
+        } else {
+            try {
+                const raw = localStorage.getItem('cart');
+                setCartItems(raw ? JSON.parse(raw) : []);
+            } catch {}
+            setLoading(false);
+        }
+    }, []);
+
+    // Keep localStorage in sync (only if not logged in)
+    useEffect(() => {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if (!token) {
             try {
                 localStorage.setItem('cart', JSON.stringify(cartItems));
             } catch {}
-        }, [cartItems]);
+        }
+    }, [cartItems]);
     const [isCheckingOut, setIsCheckingOut] = useState(false); 
     const [message, setMessage] = useState('');
 
@@ -70,28 +101,74 @@ function CartClient() {
     const total = subtotal + shipping;
 
     // Mise à jour de la quantité
-    const handleUpdateQuantity = (id: string | number, newQuantity: number) => {
+    const handleUpdateQuantity = async (id: string | number, newQuantity: number) => {
         if (newQuantity <= 0 || isNaN(newQuantity)) {
             handleRemoveItem(id);
             return;
         }
+        
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if (token) {
+            try {
+                await fetch(`${API_BASE_URL}/cart/items/${id}`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ quantity: newQuantity })
+                });
+            } catch(e) { console.error(e); }
+        }
+
         setCartItems(prev => prev.map(item => 
             item.id === id ? { ...item, quantity: newQuantity } : item
         ));
     };
 
     // Suppression d'un article
-    const handleRemoveItem = (id: string | number) => {
+    const handleRemoveItem = async (id: string | number) => {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if (token) {
+            try {
+                await fetch(`${API_BASE_URL}/cart/items/${id}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            } catch(e) { console.error(e); }
+        }
+
         setCartItems(prev => prev.filter(item => item.id !== id));
         setMessage(`Article supprimé du panier.`);
         setTimeout(() => setMessage(''), 3000);
     };
 
     // Simulation de la procédure de paiement
-    const handleCheckout = () => {
+    const handleCheckout = async () => {
         setIsCheckingOut(true);
         setMessage('');
         
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if (token) {
+            try {
+                const res = await fetch(`${API_BASE_URL}/orders/checkout`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    setMessage("Commande réussie ! Merci pour votre commande.");
+                    setCartItems([]);
+                } else {
+                    setMessage("Erreur lors de la commande.");
+                }
+            } catch(e) {
+                console.error(e);
+                setMessage("Erreur de connexion.");
+            }
+            setIsCheckingOut(false);
+            return;
+        }
+
         setTimeout(() => {
             console.log('Initiation du paiement ! Total: $' + total.toFixed(2));
             setIsCheckingOut(false);

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { API_BASE_URL } from '../../../src/api-config';
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -38,7 +39,7 @@ export default function EditProfilePage() {
         const token = userData.access_token || localStorage.getItem('token');
 
         if (token) {
-          fetch(`http://localhost:5000/users/profile`, {
+          fetch(`${API_BASE_URL}/users/profile`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -101,7 +102,7 @@ export default function EditProfilePage() {
       // 1. Try to update Backend
       if (token) {
         try {
-          const res = await fetch(`http://localhost:5000/users/profile`, {
+          const res = await fetch(`${API_BASE_URL}/users/profile`, {
             method: 'PATCH',
             headers: { 
               'Content-Type': 'application/json',

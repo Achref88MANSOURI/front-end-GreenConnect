@@ -31,18 +31,24 @@ export default function EquipmentPage() {
                 <p className="text-gray-600 mb-4">
                   Avez-vous du materiel agricole inutilise? Mettez-le a disposition d&apos;autres agriculteurs et generez des revenus supplementaires.
                 </p>
-                <button className="w-full bg-green-600 text-white py-2 rounded-md font-bold hover:bg-green-700 transition">
+                <Link 
+                  href="/equipment/create"
+                  className="block w-full bg-green-600 text-white py-2 rounded-md font-bold hover:bg-green-700 transition text-center"
+                >
                   Lister mon Equipement
-                </button>
+                </Link>
               </div>
               <div className="bg-white p-6 rounded-lg shadow-md">
                 <h3 className="text-xl font-bold text-green-700 mb-4">Louer de l&apos;Equipement</h3>
                 <p className="text-gray-600 mb-4">
                   Trouvez l&apos;equipement dont vous avez besoin a des tarifs competitifs sans avoir a investir dans l&apos;achat.
                 </p>
-                <button className="w-full bg-green-600 text-white py-2 rounded-md font-bold hover:bg-green-700 transition">
+                <Link 
+                  href="/equipment/browse"
+                  className="block w-full bg-green-600 text-white py-2 rounded-md font-bold hover:bg-green-700 transition text-center"
+                >
                   Parcourir l&apos;Equipement
-                </button>
+                </Link>
               </div>
             </div>
           </div>

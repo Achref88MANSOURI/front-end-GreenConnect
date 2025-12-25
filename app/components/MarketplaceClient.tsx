@@ -1,10 +1,14 @@
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react/jsx-no-undef */
 "use client";
 
 import React, { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { API_BASE_URL } from '../../src/api-config';
+import { ShoppingCart, Search, MapPin, SlidersHorizontal, PackageX, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Product } from '../data/products';
 import ProductCard from './ProductCard';
-import { type Product } from '../data/products';
-import { Search, MapPin, SlidersHorizontal, ShoppingCart, ChevronLeft, ChevronRight, PackageX } from 'lucide-react';
 
 export default function MarketplaceClient() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -20,7 +24,7 @@ export default function MarketplaceClient() {
     // Add timestamp to prevent caching
     {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      fetch(`http://localhost:5000/products?t=${Date.now()}`, {
+      fetch(`${API_BASE_URL}/products?t=${Date.now()}`, {
         cache: 'no-store',
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       })
@@ -40,7 +44,7 @@ export default function MarketplaceClient() {
           name: item.title, // Map title to name
           price: `${item.price} MAD`, // Format price from numeric
           location: item.location || item.farmer?.address || 'Tunisia',
-          image: item.imageUrl ? `http://localhost:5000/uploads/${item.imageUrl}` : '', // Construct image URL
+          image: item.imageUrl ? `${API_BASE_URL}/uploads/${item.imageUrl}` : '', // Construct image URL
           description: item.description,
           // Prefer explicit vendeur, else farmer.name fallback
           seller: item.vendeur || item.farmer?.name || 'Inconnu',
@@ -91,7 +95,7 @@ export default function MarketplaceClient() {
               <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
                 Marché <span className="text-emerald-400">GreenConnect</span>
               </h1>
-              <p className="text-lg text-gray-300 max-w-xl">
+              <p className="text-lg text-gray-700 max-w-xl">
                 La plateforme premium pour les échanges agricoles professionnels. 
                 Qualité garantie, traçabilité assurée et connexions directes.
               </p>
@@ -128,7 +132,7 @@ export default function MarketplaceClient() {
                 value={query}
                 onChange={e => { setQuery(e.target.value); setPage(1); }}
                 placeholder="Que recherchez-vous ?"
-                className="block w-full pl-11 pr-4 py-3.5 bg-gray-50 border-transparent text-gray-900 placeholder-gray-500 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
+                className="block w-full pl-11 pr-4 py-3.5 bg-gray-50 border-transparent text-gray-900 placeholder-gray-700 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
               />
             </div>
 
@@ -141,7 +145,7 @@ export default function MarketplaceClient() {
                 value={location}
                 onChange={e => { setLocation(e.target.value); setPage(1); }}
                 placeholder="Lieu (ex: Sfax)"
-                className="block w-full pl-11 pr-4 py-3.5 bg-gray-50 border-transparent text-gray-900 placeholder-gray-500 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
+                className="block w-full pl-11 pr-4 py-3.5 bg-gray-50 border-transparent text-gray-900 placeholder-gray-700 rounded-xl focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200"
               />
             </div>
 
@@ -163,7 +167,7 @@ export default function MarketplaceClient() {
               </div>
               <button
                 onClick={() => { setQuery(''); setLocation(''); setSortBy('newest'); setPage(1); }}
-                className="px-4 py-3.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 hover:text-gray-900 transition-colors font-medium"
+                className="px-4 py-3.5 bg-gray-100 text-gray-800 rounded-xl hover:bg-gray-200 hover:text-gray-900 transition-colors font-medium"
                 title="Réinitialiser les filtres"
               >
                 ↺
@@ -192,7 +196,7 @@ export default function MarketplaceClient() {
               <PackageX className="w-8 h-8 text-red-500" />
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">Erreur de chargement</h3>
-            <p className="text-gray-500 max-w-md mx-auto">{error}</p>
+            <p className="text-gray-800 max-w-md mx-auto">{error}</p>
             <button 
               onClick={() => window.location.reload()} 
               className="mt-6 px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition"
@@ -204,7 +208,7 @@ export default function MarketplaceClient() {
           <>
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl font-bold text-gray-900">
-                Résultats <span className="text-gray-400 font-normal text-lg ml-2">({total} produits)</span>
+                Résultats <span className="text-gray-600 font-normal text-lg ml-2">({total} produits)</span>
               </h2>
             </div>
 
@@ -217,10 +221,10 @@ export default function MarketplaceClient() {
             ) : (
               <div className="flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-dashed border-gray-200 text-center">
                 <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
-                  <Search className="w-10 h-10 text-gray-300" />
+                  <Search className="w-10 h-10 text-gray-600" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Aucun résultat trouvé</h3>
-                <p className="text-gray-500 max-w-md mx-auto mb-8">
+                <p className="text-gray-800 max-w-md mx-auto mb-8">
                   Nous n'avons trouvé aucun produit correspondant à vos critères. Essayez de modifier vos filtres ou votre recherche.
                 </p>
                 <button 

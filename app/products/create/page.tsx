@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { API_BASE_URL } from '../../../src/api-config';
 
 export default function CreateProductPage() {
   const router = useRouter();
@@ -85,7 +86,7 @@ export default function CreateProductPage() {
       }
 
       // Include JWT if backend requires authentication
-      const response = await fetch('http://localhost:5000/products/upload', {
+      const response = await fetch(`${API_BASE_URL}/products/upload`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: data,
