@@ -109,7 +109,7 @@ export default function EquipmentDetailPage() {
                             {equipment.images && equipment.images.length > 0 ? (
                                 <div className="h-96 bg-gradient-to-r from-green-100 to-gray-100 flex items-center justify-center">
                                     <img 
-                                        src={equipment.images[0]} 
+                                        src={`${API_BASE_URL}${equipment.images[0]}`}
                                         alt={equipment.name}
                                         className="w-full h-full object-cover"
                                     />
@@ -172,7 +172,7 @@ export default function EquipmentDetailPage() {
                                     {equipment.images.slice(1).map((img, idx) => (
                                         <img
                                             key={idx}
-                                            src={img}
+                                            src={`${API_BASE_URL}${img}`}
                                             alt={`${equipment.name} ${idx + 2}`}
                                             className="w-full h-48 object-cover rounded-lg"
                                         />
