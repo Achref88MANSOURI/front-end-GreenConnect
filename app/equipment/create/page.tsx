@@ -14,6 +14,8 @@ export default function CreateEquipmentPage() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -22,7 +24,6 @@ export default function CreateEquipmentPage() {
         pricePerDay: '',
         location: '',
         availability: true,
-        images: '',
     });
 
     useEffect(() => {
@@ -42,6 +43,31 @@ export default function CreateEquipmentPage() {
         });
     };
 
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const newFiles = Array.from(e.target.files);
+            setUploadedImages([...uploadedImages, ...newFiles]);
+            
+            // Create previews for new files
+            const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+            setImagePreviews([...imagePreviews, ...newPreviews]);
+        }
+    };
+
+    const removeImage = (index: number) => {
+        // Cleanup the object URL to prevent memory leaks
+        URL.revokeObjectURL(imagePreviews[index]);
+        setUploadedImages(uploadedImages.filter((_, i) => i !== index));
+        setImagePreviews(imagePreviews.filter((_, i) => i !== index));
+    };
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            imagePreviews.forEach(preview => URL.revokeObjectURL(preview));
+        };
+    }, []);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -56,21 +82,24 @@ export default function CreateEquipmentPage() {
         }
 
         try {
+            const formDataToSend = new FormData();
+            formDataToSend.append('name', formData.name);
+            formDataToSend.append('description', formData.description);
+            formDataToSend.append('category', formData.category);
+            formDataToSend.append('pricePerDay', parseFloat(formData.pricePerDay).toString());
+            formDataToSend.append('location', formData.location);
+            formDataToSend.append('availability', formData.availability.toString());
+            
+            uploadedImages.forEach((file) => {
+                formDataToSend.append('images', file);
+            });
+
             const response = await fetch(`${API_BASE_URL}/equipment`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify({
-                    name: formData.name,
-                    description: formData.description,
-                    category: formData.category,
-                    pricePerDay: parseFloat(formData.pricePerDay),
-                    location: formData.location,
-                    availability: formData.availability,
-                    images: formData.images ? formData.images.split(',').map(img => img.trim()) : [],
-                }),
+                body: formDataToSend,
             });
 
             if (!response.ok) {
@@ -96,7 +125,7 @@ export default function CreateEquipmentPage() {
             <>
                 <Header />
                 <main className="max-w-7xl mx-auto px-4 py-12">
-                    <p className="text-center text-gray-800">Chargement...</p>
+                    <p className="text-center text-gray-900">Chargement...</p>
                 </main>
                 <Footer />
             </>
@@ -111,7 +140,7 @@ export default function CreateEquipmentPage() {
                     <h1 className="text-4xl font-extrabold text-green-900">
                         Ajouter du Matériel Agricole
                     </h1>
-                    <p className="mt-2 text-gray-800">
+                    <p className="mt-2 text-gray-900">
                         Mettez votre équipement en location et générez des revenus supplémentaires
                     </p>
                 </div>
@@ -130,7 +159,7 @@ export default function CreateEquipmentPage() {
 
                 <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-md p-8 space-y-6">
                     <div>
-                        <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label htmlFor="name" className="block text-sm font-semibold text-gray-900 mb-2">
                             Nom de l&apos;Équipement *
                         </label>
                         <input
@@ -146,7 +175,7 @@ export default function CreateEquipmentPage() {
                     </div>
 
                     <div>
-                        <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label htmlFor="description" className="block text-sm font-semibold text-gray-900 mb-2">
                             Description *
                         </label>
                         <textarea
@@ -163,7 +192,7 @@ export default function CreateEquipmentPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label htmlFor="category" className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label htmlFor="category" className="block text-sm font-semibold text-gray-900 mb-2">
                                 Catégorie *
                             </label>
                             <select
@@ -172,7 +201,7 @@ export default function CreateEquipmentPage() {
                                 value={formData.category}
                                 onChange={handleChange}
                                 required
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
                             >
                                 <option value="Tractor">Tracteur</option>
                                 <option value="Harvester">Moissonneuse</option>
@@ -185,7 +214,7 @@ export default function CreateEquipmentPage() {
                         </div>
 
                         <div>
-                            <label htmlFor="pricePerDay" className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label htmlFor="pricePerDay" className="block text-sm font-semibold text-gray-900 mb-2">
                                 Prix par Jour (TND) *
                             </label>
                             <input
@@ -203,7 +232,7 @@ export default function CreateEquipmentPage() {
                         </div>
 
                         <div>
-                            <label htmlFor="location" className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label htmlFor="location" className="block text-sm font-semibold text-gray-900 mb-2">
                                 Localisation *
                             </label>
                             <input
@@ -213,7 +242,7 @@ export default function CreateEquipmentPage() {
                                 value={formData.location}
                                 onChange={handleChange}
                                 required
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-600 text-gray-900"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-600 text-gray-900"
                                 placeholder="Ex: Sfax, Tunisie"
                             />
                         </div>
@@ -227,28 +256,59 @@ export default function CreateEquipmentPage() {
                                 onChange={handleChange}
                                 className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
                             />
-                            <label htmlFor="availability" className="ml-3 text-sm font-semibold text-gray-700">
+                            <label htmlFor="availability" className="ml-3 text-sm font-semibold text-gray-900">
                                 Disponible immédiatement
                             </label>
                         </div>
                     </div>
 
                     <div>
-                        <label htmlFor="images" className="block text-sm font-semibold text-gray-700 mb-2">
-                            Images (URLs séparées par des virgules)
+                        <label htmlFor="images" className="block text-sm font-semibold text-gray-900 mb-2">
+                            Télécharger des Images
                         </label>
-                        <input
-                            type="text"
-                            id="images"
-                            name="images"
-                            value={formData.images}
-                            onChange={handleChange}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-600 text-gray-900"
-                            placeholder="https://exemple.com/image1.jpg, https://exemple.com/image2.jpg"
-                        />
-                        <p className="mt-1 text-sm text-gray-700">
-                            Entrez les URLs des images séparées par des virgules
-                        </p>
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-500 transition">
+                            <input
+                                type="file"
+                                id="images"
+                                name="images"
+                                onChange={handleImageUpload}
+                                multiple
+                                accept="image/*"
+                                className="hidden"
+                            />
+                            <label htmlFor="images" className="cursor-pointer">
+                                <p className="text-gray-900 font-semibold mb-1">Cliquez pour télécharger ou glissez-déposez</p>
+                                <p className="text-sm text-gray-600">Formats supportés: JPG, PNG, GIF (max 5MB par image)</p>
+                            </label>
+                        </div>
+
+                        {uploadedImages.length > 0 && (
+                            <div className="mt-4">
+                                <p className="text-sm font-semibold text-gray-900 mb-3">Images sélectionnées:</p>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    {uploadedImages.map((file, index) => (
+                                        <div key={index} className="relative group">
+                                            <img 
+                                                src={imagePreviews[index]} 
+                                                alt={file.name}
+                                                className="w-full h-32 object-cover rounded-lg bg-gray-100"
+                                            />
+                                            <div className="mt-1">
+                                                <p className="text-xs text-gray-600 truncate">{file.name}</p>
+                                                <p className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeImage(index)}
+                                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex gap-4 pt-4">
@@ -262,7 +322,7 @@ export default function CreateEquipmentPage() {
                         <button
                             type="button"
                             onClick={() => router.back()}
-                            className="px-6 py-3 border border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition"
+                            className="px-6 py-3 border border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition text-gray-900"
                         >
                             Annuler
                         </button>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -71,7 +72,7 @@ export default function EditProductPage() {
         return;
       }
 
-      // Build payload aligned with UpdateProductDto (partial of CreateProductDto)
+      // 1) Update basic fields
       const payload = {
         title: form.title,
         description: form.description,
@@ -90,6 +91,23 @@ export default function EditProductPage() {
       if (!res.ok) {
         const txt = await res.text().catch(() => '');
         throw new Error(`Échec de la mise à jour: ${res.status} ${res.statusText} ${txt}`);
+      }
+
+      // 2) If an image was selected, upload it separately
+      if (form.image) {
+        const fd = new FormData();
+        fd.append('file', form.image);
+        const imgRes = await fetch(`http://localhost:5000/products/${encodeURIComponent(String(numId))}/image`, {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: fd,
+        });
+        if (!imgRes.ok) {
+          const txt = await imgRes.text().catch(() => '');
+          throw new Error(`Image non mise à jour: ${imgRes.status} ${imgRes.statusText} ${txt}`);
+        }
       }
 
       alert('Produit mis à jour');
@@ -130,24 +148,24 @@ export default function EditProductPage() {
     <>
       <Header />
       <main className="max-w-4xl mx-auto p-6 bg-white rounded-lg">
-        <h1 className="text-2xl font-bold mb-4">Modifier le produit</h1>
+        <h1 className="text-2xl font-bold mb-4 text-gray-900">Modifier le produit</h1>
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium">Titre</label>
-            <input name="title" value={form.title} onChange={onChange} className="mt-1 w-full border rounded p-2" />
+            <label className="block text-sm font-medium text-gray-900">Titre</label>
+            <input name="title" value={form.title} onChange={onChange} className="mt-1 w-full border rounded p-2 text-gray-900 placeholder-gray-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium">Description</label>
-            <textarea name="description" value={form.description} onChange={onChange} className="mt-1 w-full border rounded p-2" rows={4} />
+            <label className="block text-sm font-medium text-gray-900">Description</label>
+            <textarea name="description" value={form.description} onChange={onChange} className="mt-1 w-full border rounded p-2 text-gray-900 placeholder-gray-500" rows={4} />
           </div>
           <div>
-            <label className="block text-sm font-medium">Prix</label>
-            <input type="number" name="price" value={form.price} onChange={onChange} className="mt-1 w-full border rounded p-2" />
+            <label className="block text-sm font-medium text-gray-900">Prix</label>
+            <input type="number" name="price" value={form.price} onChange={onChange} className="mt-1 w-full border rounded p-2 text-gray-900 placeholder-gray-500" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Image (optionnel)</label>
-            <input type="file" accept="image/*" onChange={onFile} />
+            <label className="block text-sm font-medium text-gray-900">Image (optionnel)</label>
+            <input type="file" accept="image/*" onChange={onFile} className="text-gray-900" />
             {form.imageUrl && (
               <div className="mt-2">
                 <img src={form.imageUrl} alt="image actuelle" className="h-24 object-cover rounded" />

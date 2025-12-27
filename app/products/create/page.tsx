@@ -133,7 +133,7 @@ export default function CreateProductPage() {
               name="title"
               id="title"
               required
-              className="mt-1 block w-full px-4 py-3 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm"
+              className="mt-1 block w-full px-4 py-3 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm text-gray-900"
               placeholder="e.g., Organic Tomatoes"
               value={formData.title}
               onChange={handleChange}
@@ -153,7 +153,7 @@ export default function CreateProductPage() {
                   name="price"
                   id="price"
                   required
-                  className="focus:ring-green-500 focus:border-green-500 block w-full pl-12 sm:text-sm border-gray-300 rounded-md py-3"
+                  className="focus:ring-green-500 focus:border-green-500 block w-full pl-12 sm:text-sm border-gray-300 rounded-md py-3 text-gray-900"
                   placeholder="0.00"
                   value={formData.price}
                   onChange={handleChange}
@@ -168,7 +168,7 @@ export default function CreateProductPage() {
                 name="phoneNumber"
                 id="phoneNumber"
                 required
-                className="mt-1 block w-full px-4 py-3 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm"
+                className="mt-1 block w-full px-4 py-3 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm text-gray-900"
                 placeholder="e.g., +216 20 000 000"
                 value={formData.phoneNumber}
                 onChange={handleChange}
@@ -184,7 +184,7 @@ export default function CreateProductPage() {
                 name="vendeur"
                 id="vendeur"
                 readOnly
-                className="mt-1 block w-full px-4 py-3 rounded-md border bg-gray-100 border-gray-300 shadow-sm sm:text-sm cursor-not-allowed"
+                className="mt-1 block w-full px-4 py-3 rounded-md border bg-gray-100 border-gray-300 shadow-sm sm:text-sm cursor-not-allowed text-gray-900"
                 placeholder="Nom de l'utilisateur"
                 value={formData.vendeur}
               />
@@ -200,7 +200,7 @@ export default function CreateProductPage() {
                 name="location"
                 id="location"
                 required
-                className="mt-1 block w-full px-4 py-3 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm"
+                className="mt-1 block w-full px-4 py-3 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm text-gray-900"
                 placeholder="e.g., Sfax"
                 value={formData.location}
                 onChange={handleChange}
@@ -217,7 +217,7 @@ export default function CreateProductPage() {
               id="description"
               name="description"
               rows={4}
-              className="mt-1 block w-full px-4 py-3 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm"
+              className="mt-1 block w-full px-4 py-3 rounded-md border border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm text-gray-900"
               placeholder="Describe your product..."
               value={formData.description}
               onChange={handleChange}

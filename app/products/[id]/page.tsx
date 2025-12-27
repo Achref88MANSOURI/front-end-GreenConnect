@@ -36,6 +36,7 @@ export default function ProductDetailsPage({ params }: Props) {
   const [error, setError] = useState<string | null>(null);
   // NOTE: Ownership should be checked securely on the server or via token decoding
   const [isOwner, setIsOwner] = useState(false); 
+  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     // Safely extract ID from params
@@ -101,6 +102,13 @@ export default function ProductDetailsPage({ params }: Props) {
         
         // Simple ownership check: Assume owner if a token exists for this demo
         if (token) setIsOwner(true); 
+
+        // Load favorite state from localStorage
+        try {
+          const favRaw = typeof window !== 'undefined' ? localStorage.getItem('favorites') : null;
+          const favs = favRaw ? JSON.parse(favRaw) : [];
+          setIsFavorite(Array.isArray(favs) && favs.includes(mapped.id));
+        } catch {}
       })
       .catch(e => {
         console.error(e);
@@ -156,6 +164,45 @@ export default function ProductDetailsPage({ params }: Props) {
     } catch (err: any) {
       console.error(err);
       alert(err.message || 'Erreur lors de la suppression');
+    }
+  };
+
+  const toggleFavorite = () => {
+    if (!product) return;
+    try {
+      const favRaw = typeof window !== 'undefined' ? localStorage.getItem('favorites') : null;
+      const favs: number[] = favRaw ? JSON.parse(favRaw) : [];
+      const idx = favs.indexOf(product.id);
+      if (idx >= 0) {
+        favs.splice(idx, 1);
+        setIsFavorite(false);
+        alert('Retiré des favoris');
+      } else {
+        favs.push(product.id);
+        setIsFavorite(true);
+        alert('Ajouté aux favoris');
+      }
+      localStorage.setItem('favorites', JSON.stringify(favs));
+    } catch (e) {
+      console.error('Favorite toggle error', e);
+      alert('Impossible de mettre à jour les favoris');
+    }
+  };
+
+  const shareProduct = async () => {
+    if (!product) return;
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    const title = `Découvrez: ${product.name}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        alert('Lien copié dans le presse-papiers');
+      }
+    } catch (e) {
+      console.error('Share failed', e);
+      alert('Partage non disponible');
     }
   };
 
@@ -238,10 +285,10 @@ export default function ProductDetailsPage({ params }: Props) {
                   </div>
                 )}
                 <div className="absolute top-4 right-4 flex gap-3">
-                  <button className="p-3 bg-white/70 backdrop-blur rounded-full shadow-lg hover:bg-white transition duration-300 text-gray-600 hover:text-red-500 transform hover:scale-105">
-                    <Heart className="w-5 h-5" />
+                  <button onClick={toggleFavorite} className={`p-3 bg-white/70 backdrop-blur rounded-full shadow-lg hover:bg-white transition duration-300 transform hover:scale-105 ${isFavorite ? 'text-red-500' : 'text-gray-600 hover:text-red-500'}`}>
+                    <Heart className={`w-5 h-5 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
                   </button>
-                  <button className="p-3 bg-white/70 backdrop-blur rounded-full shadow-lg hover:bg-white transition duration-300 text-gray-600 hover:text-blue-500 transform hover:scale-105">
+                  <button onClick={shareProduct} className="p-3 bg-white/70 backdrop-blur rounded-full shadow-lg hover:bg-white transition duration-300 text-gray-600 hover:text-blue-500 transform hover:scale-105">
                     <Share2 className="w-5 h-5" />
                   </button>
                 </div>

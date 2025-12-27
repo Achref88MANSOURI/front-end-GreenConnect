@@ -109,6 +109,12 @@ export default function MarketplaceClient() {
                 <span className="font-medium">Mon Panier</span>
               </Link>
               <Link 
+                href="/favorites" 
+                className="flex items-center gap-2 px-5 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-full hover:bg-white/20 transition-all group"
+              >
+                <span className="font-medium">❤️ Favoris</span>
+              </Link>
+              <Link 
                 href="/products/create" 
                 className="flex items-center gap-2 px-5 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full shadow-lg shadow-emerald-500/30 transition-all transform hover:-translate-y-0.5"
               >
