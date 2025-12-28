@@ -1,16 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// app/investments/create/page.tsx
+// app/investments/[id]/edit/page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
+import { useRouter, useParams } from 'next/navigation';
+import Header from '../../../components/Header';
+import Footer from '../../../components/Footer';
 import { API_BASE_URL } from '@/src/api-config';
 
-export default function CreateListingPage() {
+export default function EditListingPage() {
     const router = useRouter();
-    const [loading, setLoading] = useState(false);
+    const params = useParams();
+    const landId = params.id as string;
+
+    const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -33,15 +37,69 @@ export default function CreateListingPage() {
 
     const [imageFiles, setImageFiles] = useState<File[]>([]);
     const [imagePreview, setImagePreview] = useState<string[]>([]);
+    const [existingImages, setExistingImages] = useState<string[]>([]);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token) {
             router.push('/login');
-        } else {
-            setIsAuthenticated(true);
+            return;
         }
-    }, [router]);
+        setIsAuthenticated(true);
+        fetchLandDetails(token);
+    }, []);
+
+    const fetchLandDetails = async (token: string) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/investments/lands/${landId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (!response.ok) {
+                throw new Error('Erreur lors du chargement des détails');
+            }
+
+            const land = await response.json();
+            
+            // Format dates for input type="date" (YYYY-MM-DD)
+            // Handle timezone issues by parsing the date string directly
+            const formatDate = (dateString: string | undefined) => {
+                if (!dateString) return '';
+                // If it's already in YYYY-MM-DD format, return as is
+                if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    return dateString;
+                }
+                // Otherwise parse ISO format carefully
+                const date = new Date(dateString);
+                // Get local date to avoid timezone shifts
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            setFormData({
+                title: land.title || '',
+                description: land.description || '',
+                areaHectares: land.targetAmount?.toString() || '',
+                leasePrice: land.currentAmount?.toString() || '',
+                availableFrom: formatDate(land.availableFrom),
+                availableUntil: formatDate(land.fundingDeadline),
+                category: land.category || 'Blé',
+                location: land.location || '',
+                soilType: land.soilType || '',
+                cropType: land.cropType || '',
+                hasWaterAccess: land.hasWaterAccess || false,
+                minSeasonMonths: land.minimumInvestment?.toString() || '',
+                maxSeasonMonths: land.expectedROI?.toString() || '',
+            });
+            setExistingImages(land.images || []);
+            setLoading(false);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Erreur');
+            setLoading(false);
+        }
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target as HTMLInputElement;
@@ -60,16 +118,20 @@ export default function CreateListingPage() {
         setImagePreview(previews);
     };
 
+    const handleRemoveExistingImage = (index: number) => {
+        setExistingImages(existingImages.filter((_, i) => i !== index));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
+        setSubmitting(true);
         setError('');
         setSuccess('');
 
         const token = localStorage.getItem('token');
         if (!token) {
-            setError('Vous devez être connecté pour publier une terre');
-            setLoading(false);
+            setError('Vous devez être connecté');
+            setSubmitting(false);
             return;
         }
 
@@ -93,14 +155,14 @@ export default function CreateListingPage() {
             if (formData.maxSeasonMonths) {
                 uploadData.append('maxSeasonMonths', parseInt(formData.maxSeasonMonths).toString());
             }
-            
-            // Add image files
+
+            // Add new image files only (images existantes sont gardées automatiquement au backend)
             imageFiles.forEach((file) => {
                 uploadData.append('images', file);
             });
 
-            const response = await fetch(`${API_BASE_URL}/investments/lands`, {
-                method: 'POST',
+            const response = await fetch(`${API_BASE_URL}/investments/lands/${landId}`, {
+                method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
@@ -109,21 +171,32 @@ export default function CreateListingPage() {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Erreur lors de la publication');
+                throw new Error(errorData.message || 'Erreur lors de la mise à jour');
             }
 
-            const land = await response.json();
-            setSuccess('Terre publiée avec succès! Redirection...');
+            setSuccess('Terre mise à jour avec succès! Redirection...');
             
             setTimeout(() => {
-                router.push(`/investments/${land.id}`);
+                router.push(`/investments/${landId}`);
             }, 1500);
         } catch (err: any) {
-            setError(err.message || 'Erreur lors de la publication');
+            setError(err.message || 'Erreur lors de la mise à jour');
         } finally {
-            setLoading(false);
+            setSubmitting(false);
         }
     };
+
+    if (loading) {
+        return (
+            <>
+                <Header />
+                <main className="max-w-7xl mx-auto px-4 py-12">
+                    <p className="text-center text-gray-800">Chargement...</p>
+                </main>
+                <Footer />
+            </>
+        );
+    }
 
     if (!isAuthenticated) {
         return (
@@ -146,13 +219,13 @@ export default function CreateListingPage() {
                     <div className="mb-10 text-center">
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 border border-emerald-300 mb-6">
                             <span className="text-2xl">🌾</span>
-                            <span className="text-sm font-semibold text-emerald-900">Publier une Terre</span>
+                            <span className="text-sm font-semibold text-emerald-900">Modifier une Terre</span>
                         </div>
                         <h1 className="text-5xl font-bold bg-gradient-to-r from-emerald-900 to-green-900 bg-clip-text text-transparent mb-3">
-                            Louez Votre Terre
+                            Modifier Votre Annonce
                         </h1>
                         <p className="text-gray-700 max-w-2xl mx-auto">
-                            Remplissez le formulaire ci-dessous pour publier votre terre et commencer à gagner des revenus passifs
+                            Mettez à jour les informations de votre terre
                         </p>
                     </div>
 
@@ -211,7 +284,7 @@ export default function CreateListingPage() {
                                     required
                                     rows={5}
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition resize-none"
-                                    placeholder="Décrivez les caractéristiques de votre terre, le sol, les cultures précédentes, etc..."
+                                    placeholder="Décrivez les caractéristiques de votre terre..."
                                 />
                             </div>
                         </fieldset>
@@ -427,9 +500,37 @@ export default function CreateListingPage() {
                                 />
                             </div>
 
+                            {/* Existing Images */}
+                            {existingImages.length > 0 && (
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                        Images Actuelles ({existingImages.length})
+                                    </label>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        {existingImages.map((image, idx) => (
+                                            <div key={idx} className="relative">
+                                                <img
+                                                    src={image?.startsWith('http') ? image : `${API_BASE_URL}${image}`}
+                                                    alt={`Image ${idx + 1}`}
+                                                    className="w-full h-24 object-cover rounded-lg border border-emerald-200"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveExistingImage(idx)}
+                                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* New Images */}
                             <div>
                                 <label htmlFor="images" className="block text-sm font-semibold text-gray-900 mb-2">
-                                    Images <span className="text-red-500">*</span>
+                                    Ajouter des Images
                                 </label>
                                 <input
                                     type="file"
@@ -441,13 +542,13 @@ export default function CreateListingPage() {
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
                                 />
                                 <p className="mt-1 text-sm text-gray-600">
-                                    Sélectionnez une ou plusieurs images de votre terre (JPG, PNG, etc.)
+                                    Sélectionnez une ou plusieurs nouvelles images
                                 </p>
                                 
-                                {/* Image Preview */}
+                                {/* New Image Preview */}
                                 {imagePreview.length > 0 && (
                                     <div className="mt-4">
-                                        <p className="text-sm font-medium text-gray-700 mb-2">Aperçu ({imagePreview.length} image{imagePreview.length > 1 ? 's' : ''}):</p>
+                                        <p className="text-sm font-medium text-gray-700 mb-2">Nouvelles images ({imagePreview.length}):</p>
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                             {imagePreview.map((preview, idx) => (
                                                 <div key={idx} className="relative">
@@ -469,11 +570,11 @@ export default function CreateListingPage() {
                         <div className="flex gap-4 pt-6 border-t border-gray-200">
                             <button
                                 type="submit"
-                                disabled={loading}
+                                disabled={submitting}
                                 className="flex-1 bg-gradient-to-r from-emerald-600 to-green-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2"
                             >
-                                <span>🌿</span>
-                                <span>{loading ? 'Publication en cours...' : 'Publier la Terre'}</span>
+                                <span>✓</span>
+                                <span>{submitting ? 'Mise à jour en cours...' : 'Mettre à Jour'}</span>
                             </button>
                             <button
                                 type="button"
@@ -490,4 +591,3 @@ export default function CreateListingPage() {
         </>
     );
 }
-
