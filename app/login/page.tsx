@@ -51,6 +51,20 @@ export default function LoginPage() {
       if (res.ok && data) {
         // Store JWT for protected actions
         localStorage.setItem("token", data.access_token);
+        // Also store as cookie for server-side middleware
+        try {
+          const parts = data.access_token.split('.');
+          let maxAge = 60 * 60 * 24 * 7; // default 7 days
+          if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1]));
+            if (payload && payload.exp && typeof payload.exp === 'number') {
+              const nowSec = Math.floor(Date.now() / 1000);
+              const diff = payload.exp - nowSec;
+              if (diff > 0) maxAge = diff;
+            }
+          }
+          document.cookie = `gc_token=${data.access_token}; path=/; max-age=${maxAge}; samesite=lax`;
+        } catch {}
         // Optionally store user info if provided
         if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
         // Notify header/auth state

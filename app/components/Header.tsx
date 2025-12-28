@@ -57,7 +57,6 @@ const Header: React.FC = () => {
         <Link href="/equipment" className="hover:text-green-600 transition">Faza’et-Ard</Link>
         <Link href="/carriers" className="hover:text-green-600 transition">Tawssel</Link>
 
-        
         {/* Public Links */}
         <Link href="/about" className="hover:text-green-600 transition">About</Link>
         <Link href="/contact" className="hover:text-green-600 transition">Contact</Link>
