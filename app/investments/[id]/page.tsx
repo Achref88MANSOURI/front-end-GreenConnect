@@ -1,444 +1,346 @@
 /* eslint-disable react/no-unescaped-entities */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// app/investments/[id]/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
+import Image from 'next/image';
 import { API_BASE_URL } from '@/src/api-config';
 
-interface InvestmentProject {
+interface Land {
+  id: number;
+  title: string;
+  description: string;
+  location: string;
+  targetAmount: number;
+  currentAmount: number;
+  minimumInvestment: number;
+  expectedROI: number;
+  duration: number;
+  fundingDeadline: string;
+  images: string[];
+  status: string;
+  owner: {
     id: number;
-    title: string;
-    description: string;
-    targetAmount: number;
-    currentAmount: number;
-    minimumInvestment: number;
-    expectedROI: number;
-    duration: number;
-    category: string;
-    location: string;
-    status: string;
-    images?: string[];
-    owner: {
-        id: number;
-        name: string;
-        email: string;
-    };
-    createdAt: string;
+    name: string;
+    email: string;
+    avatarUrl?: string;
+  };
 }
 
-interface Investment {
-    id: number;
-    amount: number;
-    investor: {
-        id: number;
-        name: string;
-    };
-    createdAt: string;
-}
+export default function LandDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const [land, setLand] = useState<Land | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [leaseForm, setLeaseForm] = useState({
+    seasonStartDate: '',
+    customDurationMonths: '',
+    farmingPlan: '',
+  });
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
-export default function InvestmentDetailPage() {
-    const params = useParams();
-    const router = useRouter();
-    const id = params.id as string;
+  const landId = Array.isArray(params.id) ? params.id[0] : params.id;
 
-    const [project, setProject] = useState<InvestmentProject | null>(null);
-    const [investments, setInvestments] = useState<Investment[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [investmentAmount, setInvestmentAmount] = useState('');
-    const [investLoading, setInvestLoading] = useState(false);
-    const [investError, setInvestError] = useState('');
-    const [investSuccess, setInvestSuccess] = useState('');
-    const [showCelebration, setShowCelebration] = useState(false);
+  useEffect(() => {
+    const fetchLand = async () => {
+      if (!landId) {
+        setError('No land ID provided');
+        setLoading(false);
+        return;
+      }
 
-    useEffect(() => {
-        fetchProjectDetails();
-    }, [id]);
-
-    const fetchProjectDetails = async () => {
-        try {
-            const response = await fetch(`${API_BASE_URL}/investments/projects/${id}`);
-            if (!response.ok) {
-                throw new Error('Projet non trouvé');
-            }
-            const data = await response.json();
-            setProject(data);
-
-            // Fetch investments for this project
-            const token = localStorage.getItem('token');
-            if (token) {
-                try {
-                    const invResponse = await fetch(`${API_BASE_URL}/investments/projects/${id}/investments`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                        },
-                    });
-                    if (invResponse.ok) {
-                        const invData = await invResponse.json();
-                        setInvestments(invData);
-                    }
-                } catch (err) {
-                    // Silently fail if investments can't be fetched
-                }
-            }
-        } catch (err: any) {
-            setError(err.message || 'Erreur lors du chargement du projet');
-        } finally {
-            setLoading(false);
+      try {
+        const response = await fetch(`http://localhost:5000/investments/lands/${landId}`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Failed to load land details');
         }
+        const data = await response.json();
+        setLand(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error loading land');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const handleInvest = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setInvestLoading(true);
-        setInvestError('');
-        setInvestSuccess('');
-
-        const token = localStorage.getItem('token');
-        if (!token) {
-            setInvestError('Vous devez être connecté pour investir');
-            setInvestLoading(false);
-            router.push('/login');
-            return;
+    // decode JWT to get current user id if logged in
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const payloadPart = token.split('.')[1];
+        const decoded = JSON.parse(atob(payloadPart));
+        if (decoded && typeof decoded.sub === 'number') {
+          setCurrentUserId(decoded.sub);
         }
-
-        const amount = parseFloat(investmentAmount);
-        if (isNaN(amount) || amount < (project?.minimumInvestment || 0)) {
-            setInvestError(`Le montant minimum d'investissement est ${project?.minimumInvestment} TND`);
-            setInvestLoading(false);
-            return;
-        }
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/investments/invest`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    projectId: parseInt(id),
-                    amount: amount,
-                }),
-            });
-
-            if (!response.ok) {
-                let serverMsg = 'Erreur lors de l\'investissement';
-                try {
-                    const errorData = await response.json();
-                    serverMsg = errorData?.message || serverMsg;
-                } catch {
-                    const text = await response.text();
-                    if (text) serverMsg = text;
-                }
-                throw new Error(serverMsg);
-            }
-
-            const investment = await response.json();
-            setInvestSuccess('Investissement réalisé avec succès!');
-            setShowCelebration(true);
-            setInvestmentAmount('');
-            
-            // Refresh project details
-            setTimeout(() => {
-                fetchProjectDetails();
-                setInvestSuccess('');
-                setShowCelebration(false);
-            }, 2000);
-        } catch (err: any) {
-            setInvestError(err.message || 'Erreur lors de l\'investissement');
-        } finally {
-            setInvestLoading(false);
-        }
-    };
-
-    if (loading) {
-        return (
-            <>
-                <Header />
-                <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
-                    <p className="text-center text-gray-800">Chargement...</p>
-                </main>
-                <Footer />
-            </>
-        );
+      }
+    } catch {
+      // ignore decode errors
     }
 
-    if (error || !project) {
-        return (
-            <>
-                <Header />
-                <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-red-700 text-center">
-                        {error || 'Projet non trouvé'}
-                    </div>
-                </main>
-                <Footer />
-            </>
-        );
+    fetchLand();
+  }, [landId]);
+
+  const handleLeaseSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+      return;
     }
 
-    const progress = (project.currentAmount / project.targetAmount) * 100;
-    const remainingAmount = project.targetAmount - project.currentAmount;
+    try {
+      const response = await fetch('http://localhost:5000/investments/lease-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          projectId: landId,
+          seasonStartDate: leaseForm.seasonStartDate,
+          customDurationMonths: parseInt(leaseForm.customDurationMonths),
+          farmingPlan: leaseForm.farmingPlan,
+        }),
+      });
 
+      if (!response.ok) throw new Error('Failed to submit lease request');
+      
+      alert('Lease request submitted successfully!');
+      setLeaseForm({ seasonStartDate: '', customDurationMonths: '', farmingPlan: '' });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error submitting lease request');
+    }
+  };
+
+  if (loading) {
     return (
-        <>
-            <Header />
-            <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
-                                {showCelebration && (
-                                    <div className="fixed inset-0 z-50 pointer-events-none">
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            <div className="bg-white/80 backdrop-blur rounded-2xl p-6 shadow-xl border border-green-200">
-                                                <div className="text-3xl">🎉</div>
-                                                <div className="mt-2 text-green-800 font-bold text-lg text-center">Merci pour votre investissement !</div>
-                                                <div className="mt-1 text-gray-800 text-sm text-center">Votre contribution aide à faire avancer l'agriculture durable.</div>
-                                            </div>
-                                        </div>
-                                        {/* simple confetti */}
-                                        <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
-                                            {[...Array(20)].map((_, i) => (
-                                                <span key={i} className="absolute confetti">🎊</span>
-                                            ))}
-                                        </div>
-                                        <style jsx>{`
-                                            .confetti {
-                                                animation: fall 2s ease-in infinite;
-                                                left: ${Math.random() * 100}%;
-                                                top: -10%;
-                                                font-size: 22px;
-                                            }
-                                            @keyframes fall {
-                                                0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
-                                                20% { opacity: 1; }
-                                                100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
-                                            }
-                                        `}</style>
-                                    </div>
-                                )}
-                {/* Back Button */}
-                <button
-                    onClick={() => router.back()}
-                    className="mb-6 text-green-600 hover:text-green-700 font-semibold flex items-center gap-2"
-                >
-                    ← Retour aux projets
-                </button>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Main Content */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-xl shadow-md overflow-hidden">
-                            {/* Image Gallery */}
-                            {project.images && project.images.length > 0 ? (
-                                <div className="h-96 bg-gradient-to-r from-green-100 to-gray-100 flex items-center justify-center">
-                                    <img 
-                                        src={project.images[0]} 
-                                        alt={project.title}
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                            ) : (
-                                <div className="h-96 bg-gradient-to-r from-green-100 to-gray-100 flex items-center justify-center text-green-700 text-xl font-semibold">
-                                    {project.title}
-                                </div>
-                            )}
-
-                            <div className="p-8">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h1 className="text-3xl font-extrabold text-green-900">
-                                        {project.title}
-                                    </h1>
-                                    <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
-                                        project.status === 'active' ? 'bg-green-100 text-green-700' :
-                                        project.status === 'funded' ? 'bg-blue-100 text-blue-700' :
-                                        'bg-gray-100 text-gray-700'
-                                    }`}>
-                                        {project.status === 'active' ? 'Actif' : 
-                                         project.status === 'funded' ? 'Financé' : 
-                                         'Fermé'}
-                                    </span>
-                                </div>
-
-                                <div className="flex items-center gap-4 text-sm text-gray-800 mb-6">
-                                    <span>📍 {project.location}</span>
-                                    <span>•</span>
-                                    <span>🏷️ {project.category}</span>
-                                    <span>•</span>
-                                    <span>⏱️ {project.duration} mois</span>
-                                </div>
-
-                                <div className="mb-6">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="text-sm font-semibold text-gray-700">
-                                            Progression du financement
-                                        </span>
-                                        <span className="text-sm font-bold text-green-700">
-                                            {progress.toFixed(1)}%
-                                        </span>
-                                    </div>
-                                    <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
-                                        <div 
-                                            className="bg-green-600 h-4 rounded-full transition-all duration-500"
-                                            style={{ width: `${Math.min(progress, 100)}%` }}
-                                        />
-                                    </div>
-                                    <div className="flex justify-between mt-2 text-sm text-gray-800">
-                                        <span>{project.currentAmount.toLocaleString()} TND collectés</span>
-                                        <span>{project.targetAmount.toLocaleString()} TND objectif</span>
-                                    </div>
-                                </div>
-
-                                <div className="prose max-w-none">
-                                    <h2 className="text-xl font-bold text-green-800 mb-3">Description du Projet</h2>
-                                    <p className="text-gray-700 whitespace-pre-line">{project.description}</p>
-                                </div>
-
-                                <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div className="bg-green-50 rounded-lg p-4 text-center">
-                                        <div className="text-sm text-gray-800">ROI Attendu</div>
-                                        <div className="text-2xl font-bold text-green-700">{project.expectedROI}%</div>
-                                    </div>
-                                    <div className="bg-blue-50 rounded-lg p-4 text-center">
-                                        <div className="text-sm text-gray-800">Inv. Minimum</div>
-                                        <div className="text-2xl font-bold text-blue-700">{project.minimumInvestment.toLocaleString()}</div>
-                                    </div>
-                                    <div className="bg-purple-50 rounded-lg p-4 text-center">
-                                        <div className="text-sm text-gray-800">Restant</div>
-                                        <div className="text-2xl font-bold text-purple-700">{remainingAmount.toLocaleString()}</div>
-                                    </div>
-                                    <div className="bg-orange-50 rounded-lg p-4 text-center">
-                                        <div className="text-sm text-gray-800">Investisseurs</div>
-                                        <div className="text-2xl font-bold text-orange-700">{investments.length}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Recent Investments */}
-                        {investments.length > 0 && (
-                            <div className="bg-white rounded-xl shadow-md p-8">
-                                <h2 className="text-xl font-bold text-green-800 mb-4">Investissements Récents</h2>
-                                <div className="space-y-3">
-                                    {investments.slice(0, 5).map((inv) => (
-                                        <div key={inv.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                            <div>
-                                                <div className="font-semibold text-gray-800">{inv.investor.name}</div>
-                                                <div className="text-sm text-gray-500">
-                                                    {new Date(inv.createdAt).toLocaleDateString('fr-FR')}
-                                                </div>
-                                            </div>
-                                            <div className="text-lg font-bold text-green-700">
-                                                {inv.amount.toLocaleString()} TND
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Sidebar - Investment Form */}
-                    <div className="lg:col-span-1">
-                        <div className="bg-white rounded-xl shadow-md p-6 sticky top-24">
-                            <h2 className="text-2xl font-bold text-green-800 mb-4">Investir</h2>
-
-                            {project.status !== 'active' ? (
-                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-gray-800 text-center">
-                                    Ce projet n&apos;accepte plus d&apos;investissements
-                                </div>
-                            ) : (
-                                <>
-                                    {investError && (
-                                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                                            {investError}
-                                        </div>
-                                    )}
-
-                                    {investSuccess && (
-                                        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
-                                            {investSuccess}
-                                        </div>
-                                    )}
-
-                                    <form onSubmit={handleInvest} className="space-y-4">
-                                        <div>
-                                            <label htmlFor="amount" className="block text-sm font-semibold text-gray-700 mb-2">
-                                                Montant (TND)
-                                            </label>
-                                            <input
-                                                type="number"
-                                                id="amount"
-                                                value={investmentAmount}
-                                                onChange={(e) => setInvestmentAmount(e.target.value)}
-                                                min={project.minimumInvestment}
-                                                step="100"
-                                                required
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-600 text-gray-900"
-                                                placeholder={`Min: ${project.minimumInvestment}`}
-                                            />
-                                            <p className="mt-2 text-sm text-gray-700">
-                                                Minimum: {project.minimumInvestment.toLocaleString()} TND
-                                            </p>
-                                        </div>
-
-                                        {investmentAmount && parseFloat(investmentAmount) >= project.minimumInvestment && (
-                                            <div className="bg-green-50 rounded-lg p-4 space-y-2 text-sm">
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-800">Investissement:</span>
-                                                    <span className="font-semibold text-gray-800">
-                                                        {parseFloat(investmentAmount).toLocaleString()} TND
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-800">ROI estimé ({project.expectedROI}%):</span>
-                                                    <span className="font-bold text-green-700">
-                                                        {(parseFloat(investmentAmount) * (project.expectedROI / 100)).toLocaleString()} TND
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between pt-2 border-t border-green-200">
-                                                    <span className="text-gray-700 font-semibold">Retour total estimé:</span>
-                                                    <span className="font-bold text-green-700">
-                                                        {(parseFloat(investmentAmount) * (1 + project.expectedROI / 100)).toLocaleString()} TND
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        <button
-                                            type="submit"
-                                            disabled={investLoading || remainingAmount === 0}
-                                            className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition shadow-md"
-                                        >
-                                            {investLoading ? 'Traitement...' : remainingAmount === 0 ? 'Objectif Atteint' : 'Investir Maintenant'}
-                                        </button>
-
-                                        <p className="text-xs text-gray-700 text-center">
-                                            En investissant, vous acceptez nos conditions d&apos;utilisation
-                                        </p>
-                                    </form>
-
-                                    <div className="mt-6 pt-6 border-t border-gray-200">
-                                        <h3 className="font-semibold text-gray-800 mb-3">À propos du propriétaire</h3>
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-bold text-xl">
-                                                {project.owner.name.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div>
-                                                <div className="font-semibold text-gray-800">{project.owner.name}</div>
-                                                <div className="text-sm text-gray-700">{project.owner.email}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </main>
-            <Footer />
-        </>
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-emerald-200 border-t-emerald-600"></div>
+          <p className="mt-4 text-emerald-700 font-medium">Chargement...</p>
+        </div>
+      </div>
     );
+  }
+
+  if (error || !land) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50 flex items-center justify-center">
+        <div className="text-center text-red-600">
+          <h1 className="text-2xl font-bold mb-2">Erreur</h1>
+          <p>{error || 'Terre non trouvée'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const areaHectares = land.targetAmount;
+  const leasePrice = land.currentAmount;
+  const minMonths = land.minimumInvestment;
+  const maxMonths = land.expectedROI;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50 py-12">
+      <div className="max-w-6xl mx-auto px-4">
+        {/* Back Button */}
+        <button
+          onClick={() => router.back()}
+          className="mb-6 flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-emerald-700 font-semibold border-2 border-emerald-200 hover:bg-emerald-50 transition-all duration-300"
+        >
+          <span>←</span>
+          <span>Retour</span>
+        </button>
+
+        {/* Image Gallery */}
+        <div className="rounded-2xl overflow-hidden shadow-xl mb-8 h-96 bg-gradient-to-br from-emerald-200 to-teal-200 flex items-center justify-center">
+          {land.images && land.images.length > 0 ? (
+            <Image
+              src={land.images[0]?.startsWith('http') ? land.images[0] : `${API_BASE_URL}${land.images[0]}`}
+              alt={land.title}
+              width={800}
+              height={400}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="text-6xl">🌾</div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-3 gap-6 mb-8">
+          {/* Main Content */}
+          <div className="col-span-2">
+            {/* Header */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg mb-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-900 via-green-800 to-teal-900 bg-clip-text text-transparent mb-2">
+                    {land.title}
+                  </h1>
+                  <p className="text-lg text-emerald-700 font-medium">📍 {land.location}</p>
+                </div>
+                <div className={`px-4 py-2 rounded-full font-semibold text-white ${
+                  land.status === 'available' ? 'bg-emerald-500' : 
+                  land.status === 'reserved' ? 'bg-amber-500' :
+                  'bg-gray-500'
+                }`}>
+                  {land.status === 'available' ? 'Disponible' : 
+                   land.status === 'reserved' ? 'Réservé' : 'Indisponible'}
+                </div>
+              </div>
+              <p className="text-gray-700 leading-relaxed">{land.description}</p>
+            </div>
+
+            {/* Key Metrics */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-white rounded-2xl p-6 shadow-lg">
+                <p className="text-gray-600 text-sm font-medium mb-1">Surface</p>
+                <p className="text-3xl font-bold text-emerald-700">{areaHectares} ha</p>
+              </div>
+              <div className="bg-white rounded-2xl p-6 shadow-lg">
+                <p className="text-gray-600 text-sm font-medium mb-1">Prix Mensuel</p>
+                <p className="text-3xl font-bold text-emerald-700">{leasePrice} TND</p>
+              </div>
+              <div className="bg-white rounded-2xl p-6 shadow-lg">
+                <p className="text-gray-600 text-sm font-medium mb-1">Durée Min</p>
+                <p className="text-3xl font-bold text-emerald-700">{minMonths} mois</p>
+              </div>
+              <div className="bg-white rounded-2xl p-6 shadow-lg">
+                <p className="text-gray-600 text-sm font-medium mb-1">Durée Max</p>
+                <p className="text-3xl font-bold text-emerald-700">{maxMonths} mois</p>
+              </div>
+            </div>
+
+            {/* Characteristics */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg mb-6">
+              <h2 className="text-2xl font-bold mb-6 text-emerald-900">Caractéristiques 🌱</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-200">
+                  <p className="text-emerald-700 font-semibold">💧 Accès à l'eau</p>
+                  <p className="text-gray-600">Irrigation disponible</p>
+                </div>
+                <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-200">
+                  <p className="text-emerald-700 font-semibold">🌾 Type de sol</p>
+                  <p className="text-gray-600">Fertile et bien drainé</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Availability */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg">
+              <h2 className="text-2xl font-bold mb-4 text-emerald-900">Disponibilité 📅</h2>
+              <p className="text-lg text-gray-700">
+                <span className="font-semibold">Du</span> {land.availableFrom ? new Date(land.availableFrom).toLocaleDateString('fr-FR') : 'N/A'} 
+                <span className="font-semibold ml-4">Au</span> {land.fundingDeadline ? new Date(land.fundingDeadline).toLocaleDateString('fr-FR') : 'N/A'}
+              </p>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="col-span-1">
+            {/* Lease Form */}
+            <div className="bg-white rounded-2xl p-8 shadow-lg sticky top-24 mb-6">
+              <h3 className="text-xl font-bold mb-6 text-emerald-900">Demander une Location 🚜</h3>
+              
+              {land.status !== 'available' && (
+                <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-amber-700 font-medium">
+                    {land.status === 'reserved' ? '⏳ Cette terre est réservée' : '✓ Cette terre est louée'}
+                  </p>
+                </div>
+              )}
+
+              {currentUserId === land.owner.id && (
+                <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                  <p className="text-emerald-800 font-medium">
+                    C'est votre annonce. Les autres utilisateurs peuvent demander une location ici.
+                  </p>
+                </div>
+              )}
+              
+              {currentUserId !== land.owner.id && land.status !== 'available' && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700 font-medium">
+                    Cette terre n'est pas disponible pour le moment.
+                  </p>
+                </div>
+              )}
+
+              {currentUserId !== land.owner.id && land.status === 'available' && (
+              <form onSubmit={handleLeaseSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date de Début
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={leaseForm.seasonStartDate}
+                    onChange={(e) => setLeaseForm({ ...leaseForm, seasonStartDate: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border border-emerald-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Durée (mois)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min={minMonths}
+                    max={maxMonths}
+                    value={leaseForm.customDurationMonths}
+                    onChange={(e) => setLeaseForm({ ...leaseForm, customDurationMonths: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border border-emerald-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Plan d'Exploitation
+                  </label>
+                  <textarea
+                    value={leaseForm.farmingPlan}
+                    onChange={(e) => setLeaseForm({ ...leaseForm, farmingPlan: e.target.value })}
+                    placeholder="Décrivez votre plan..."
+                    className="w-full px-4 py-2 rounded-lg border border-emerald-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
+                    rows={4}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={land.status !== 'available'}
+                  className="w-full py-3 bg-gradient-to-r from-emerald-600 to-green-600 text-white font-semibold rounded-lg hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  {land.status === 'available' ? 'Demander une Location' : 'Non disponible'}
+                </button>
+              </form>
+              )}
+            </div>
+
+            {/* Owner Info */}
+            <div className="bg-gradient-to-br from-emerald-600 to-green-600 rounded-2xl p-8 shadow-lg text-white">
+              <h4 className="text-lg font-bold mb-4">Propriétaire 👨‍🌾</h4>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center font-bold text-emerald-600">
+                  {land.owner.name.charAt(0)}
+                </div>
+                <div>
+                  <p className="font-semibold">{land.owner.name}</p>
+                  <p className="text-emerald-100 text-sm">{land.owner.email}</p>
+                </div>
+              </div>
+              <button className="w-full py-2 bg-white text-emerald-600 font-semibold rounded-lg hover:bg-emerald-50 transition">
+                Contacter
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
