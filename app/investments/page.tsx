@@ -10,7 +10,7 @@ export default function InvestmentsPage() {
     return (
         <>
             <Header />
-            <main className="max-w-7xl mx-auto px-4 py-12">
+            <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
                 <div className="mb-8">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div>

@@ -76,7 +76,7 @@ export default function LoginPage() {
       <div className="pointer-events-none absolute -top-32 -left-32 h-80 w-80 rounded-full bg-green-200 blur-3xl opacity-40" />
       <div className="pointer-events-none absolute -bottom-32 -right-32 h-80 w-80 rounded-full bg-yellow-200 blur-3xl opacity-40" />
 
-      <div className="relative z-10 mx-auto max-w-6xl px-4 py-10 md:py-16">
+      <div className="relative z-10 mx-auto max-w-6xl px-4 pt-24 pb-10 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
           {/* Brand / Visual side */}
           <div className="hidden md:flex flex-col justify-between rounded-2xl p-8 bg-gradient-to-br from-green-700 to-emerald-600 text-white shadow-xl">

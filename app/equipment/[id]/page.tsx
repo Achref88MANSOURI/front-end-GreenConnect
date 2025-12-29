@@ -67,7 +67,7 @@ export default function EquipmentDetailPage() {
         return (
             <>
                 <Header />
-                <main className="max-w-7xl mx-auto px-4 py-12">
+                <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
                     <p className="text-center text-gray-800">Chargement...</p>
                 </main>
                 <Footer />
@@ -79,7 +79,7 @@ export default function EquipmentDetailPage() {
         return (
             <>
                 <Header />
-                <main className="max-w-7xl mx-auto px-4 py-12">
+                <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
                     <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-red-700 text-center">
                         {error || 'Équipement non trouvé'}
                     </div>
@@ -92,7 +92,7 @@ export default function EquipmentDetailPage() {
     return (
         <>
             <Header />
-            <main className="max-w-7xl mx-auto px-4 py-12">
+            <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
                 {/* Back Button */}
                 <button
                     onClick={() => router.back()}

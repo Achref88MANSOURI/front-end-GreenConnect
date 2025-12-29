@@ -124,7 +124,7 @@ export default function CreateEquipmentPage() {
         return (
             <>
                 <Header />
-                <main className="max-w-7xl mx-auto px-4 py-12">
+                <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
                     <p className="text-center text-gray-900">Chargement...</p>
                 </main>
                 <Footer />
@@ -135,7 +135,7 @@ export default function CreateEquipmentPage() {
     return (
         <>
             <Header />
-            <main className="max-w-4xl mx-auto px-4 py-12">
+            <main className="max-w-4xl mx-auto px-4 pt-24 pb-12">
                 <div className="mb-8">
                     <h1 className="text-4xl font-extrabold text-green-900">
                         Ajouter du Matériel Agricole

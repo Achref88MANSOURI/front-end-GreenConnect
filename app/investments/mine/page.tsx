@@ -57,7 +57,7 @@ export default function MyInvestmentsPage() {
   return (
     <>
       <Header />
-      <main className="max-w-7xl mx-auto px-4 py-12">
+      <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-3xl font-extrabold text-green-800">Mes Investissements</h1>
           <Link href="/investments" className="text-green-600 hover:text-green-700">← Parcourir les projets</Link>

@@ -71,7 +71,7 @@ export default function RegisterPage() {
 
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-green-50 via-emerald-50 to-lime-50 p-4">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-green-50 via-emerald-50 to-lime-50 p-4 pt-24">
       {/* Subtle static shapes */}
       <div className="pointer-events-none absolute -top-32 -left-32 h-80 w-80 rounded-full bg-green-200 blur-3xl opacity-30" />
       <div className="pointer-events-none absolute -bottom-32 -right-32 h-80 w-80 rounded-full bg-yellow-200 blur-3xl opacity-30" />

@@ -78,7 +78,7 @@ export default function RegisterCarrierPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-gray-50 pt-24 pb-12 px-4">
       <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8">
         <div className="mb-6">
           <Link href="/carriers" className="text-green-600 hover:text-green-700 mb-4 inline-block">

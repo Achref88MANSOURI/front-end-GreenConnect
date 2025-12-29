@@ -15,7 +15,7 @@ export default function EquipmentPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white pt-20">
         {/* Hero Section with Tab Navigation */}
         <section className="relative overflow-hidden bg-gradient-to-br from-green-600 via-emerald-600 to-teal-700 text-white py-20 px-4">
           {/* Animated Background */}

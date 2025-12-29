@@ -11,7 +11,7 @@ export default function CarriersPage() {
   return (
     <>
       <Header />
-      <main className="max-w-7xl mx-auto px-4 py-10 bg-white">
+      <main className="max-w-7xl mx-auto px-4 pt-24 pb-10 bg-white">
         
         {/* En-tête & Section CTA */}
         <div className="flex justify-between items-center border-b pb-4 mb-8">
