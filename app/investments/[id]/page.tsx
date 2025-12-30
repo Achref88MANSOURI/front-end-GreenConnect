@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
@@ -14,6 +14,7 @@ import 'swiper/css/pagination';
 import { API_BASE_URL } from '@/src/api-config';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import { useToast } from '../../components/ToastProvider';
 
 interface Land {
   availableFrom: any;
@@ -50,11 +51,28 @@ export default function LandDetailPage() {
   });
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [showLeaseForm, setShowLeaseForm] = useState(false);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [myLeaseStatus, setMyLeaseStatus] = useState<string | null>(null);
+  const [notifiedStatus, setNotifiedStatus] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   const landId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   useEffect(() => {
+    // decode JWT to get current user id if logged in and reuse token for requests
+    let token: string | null = null;
+    try {
+      token = localStorage.getItem('token');
+      if (token) {
+        const payloadPart = token.split('.')[1];
+        const decoded = JSON.parse(atob(payloadPart));
+        if (decoded && typeof decoded.sub === 'number') {
+          setCurrentUserId(decoded.sub);
+        }
+      }
+    } catch {
+      token = null;
+    }
+
     const fetchLand = async () => {
       if (!landId) {
         setError('No land ID provided');
@@ -63,7 +81,7 @@ export default function LandDetailPage() {
       }
 
       try {
-        const response = await fetch(`http://localhost:5000/investments/lands/${landId}`);
+        const response = await fetch(`${API_BASE_URL}/investments/lands/${landId}`);
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.message || 'Failed to load land details');
@@ -77,22 +95,35 @@ export default function LandDetailPage() {
       }
     };
 
-    // decode JWT to get current user id if logged in
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        const payloadPart = token.split('.')[1];
-        const decoded = JSON.parse(atob(payloadPart));
-        if (decoded && typeof decoded.sub === 'number') {
-          setCurrentUserId(decoded.sub);
+    const fetchMyLease = async () => {
+      if (!token) return;
+      try {
+        const res = await fetch(`${API_BASE_URL}/investments/my-investments`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const mine = Array.isArray(data) ? data.find((inv: any) => String(inv?.project?.id) === String(landId)) : null;
+        if (mine?.status) {
+          setMyLeaseStatus(mine.status);
         }
+      } catch {
+        // silently ignore
       }
-    } catch {
-      // ignore decode errors
-    }
+    };
 
     fetchLand();
+    fetchMyLease();
   }, [landId]);
+
+  // Surface status changes as toasts for the requester
+  useEffect(() => {
+    if (!myLeaseStatus || notifiedStatus === myLeaseStatus) return;
+    if (myLeaseStatus === 'APPROVED') addToast('Votre demande a été approuvée 🎉', 'success');
+    else if (myLeaseStatus === 'REJECTED') addToast('Votre demande a été refusée', 'error');
+    else if (myLeaseStatus === 'ACTIVE') addToast('Votre demande est en cours de traitement', 'info');
+    setNotifiedStatus(myLeaseStatus);
+  }, [myLeaseStatus, notifiedStatus, addToast]);
 
   const handleLeaseSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,11 +151,13 @@ export default function LandDetailPage() {
 
       if (!response.ok) throw new Error('Failed to submit lease request');
       
+      setMyLeaseStatus('ACTIVE');
+      setNotifiedStatus('ACTIVE');
       setShowLeaseForm(false);
-      alert('✓ Demande de location envoyée avec succès!');
+      addToast('Demande de location envoyée avec succès', 'success');
       setLeaseForm({ seasonStartDate: '', customDurationMonths: '', farmingPlan: '' });
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error submitting lease request');
+      addToast(err instanceof Error ? err.message : 'Erreur lors de la soumission de la demande', 'error');
     }
   };
 
@@ -248,14 +281,16 @@ export default function LandDetailPage() {
                       <span className="font-medium">{land.location}</span>
                     </div>
                   </div>
-                  <div className={`px-4 py-2 rounded-lg font-semibold text-sm ${
-                      land.status === 'available' ? 'bg-emerald-100 text-emerald-700' : 
-                      land.status === 'reserved' ? 'bg-amber-100 text-amber-700' :
-                      'bg-slate-100 text-slate-700'
+                  <div className={`px-4 py-2 rounded-lg font-semibold text-sm border-2 ${
+                      land.status === 'available' ? 'bg-emerald-100/80 text-emerald-800 border-emerald-400' : 
+                      land.status === 'reserved' ? 'bg-amber-100/80 text-amber-800 border-amber-400' :
+                      land.status === 'leased' ? 'bg-blue-100/80 text-blue-800 border-blue-400' :
+                      'bg-slate-100/80 text-slate-800 border-slate-400'
                     }`}
                   >
                     {land.status === 'available' ? '✓ Disponible' : 
-                     land.status === 'reserved' ? '⏳ Réservé' : '✗ Indisponible'}
+                     land.status === 'reserved' ? '⏳ Réservée' : 
+                     land.status === 'leased' ? '✓ Louée' : '✗ Indisponible'}
                   </div>
                 </div>
                 
@@ -334,6 +369,21 @@ export default function LandDetailPage() {
                         <span>👤</span>
                         <span>C'est votre annonce</span>
                       </p>
+                    </div>
+                  ) : myLeaseStatus ? (
+                    <div className={`p-4 rounded-lg border flex items-start gap-3 ${
+                      myLeaseStatus === 'APPROVED'
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                        : myLeaseStatus === 'ACTIVE'
+                        ? 'bg-amber-50 border-amber-200 text-amber-800'
+                        : 'bg-red-50 border-red-200 text-red-800'
+                    }`}>
+                      <span>{myLeaseStatus === 'APPROVED' ? '✅' : myLeaseStatus === 'ACTIVE' ? '⏳' : '✗'}</span>
+                      <div className="text-sm font-medium">
+                        {myLeaseStatus === 'APPROVED' && 'Votre demande est acceptée. Contactez le propriétaire pour finaliser.'}
+                        {myLeaseStatus === 'ACTIVE' && 'Votre demande est en cours de traitement.'}
+                        {myLeaseStatus === 'REJECTED' && 'Votre demande a été refusée.'}
+                      </div>
                     </div>
                   ) : land.status !== 'available' ? (
                     <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">

@@ -25,6 +25,19 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Ensure typed text stays dark while placeholders remain muted */
+input,
+textarea,
+select {
+  color: #0f172a;
+}
+
+input::placeholder,
+textarea::placeholder,
+select::placeholder {
+  color: #9ca3af;
+}
+
 /* --- Custom animations for dynamic effects --- */
 @keyframes floatUpDown {
   0%, 100% { transform: translateY(0); }

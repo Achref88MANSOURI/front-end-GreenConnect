@@ -5,6 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { useToast } from '../components/ToastProvider';
+  const { addToast } = useToast();
 import { API_BASE_URL } from '../../src/api-config';
 import { 
   ShoppingBag, ArrowLeft, Package, Clock, CheckCircle2, XCircle, 
@@ -82,7 +84,12 @@ export default function MyPurchaseRequestsPage() {
   }, []);
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Voulez-vous vraiment annuler cette demande ?')) return;
+    if (!confirmingId) {
+      setConfirmingId(id);
+      addToast('Cliquez encore pour annuler', 'info');
+      setTimeout(() => setConfirmingId(null), 2500);
+      return;
+    }
 
     const token = localStorage.getItem('token');
     try {
@@ -96,6 +103,8 @@ export default function MyPurchaseRequestsPage() {
       setRequests(prev => prev.filter(r => r.id !== id));
     } catch (err: any) {
       alert(err.message);
+      addToast(err.message, 'error');
+      addToast(err.message, 'error');
     }
   };
 

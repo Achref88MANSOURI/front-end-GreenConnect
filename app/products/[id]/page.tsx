@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import type { Product } from '../../data/products';
+import { useToast } from '../../components/ToastProvider';
 import { 
   MapPin, 
   User, 
@@ -38,6 +39,8 @@ export default function ProductDetailsPage({ params }: Props) {
   const [isOwner, setIsOwner] = useState(false); 
   const [isFavorite, setIsFavorite] = useState(false);
   const [isAddedToCart, setIsAddedToCart] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const { addToast } = useToast();
 
   useEffect(() => {
     // Safely extract ID from params
@@ -157,18 +160,23 @@ export default function ProductDetailsPage({ params }: Props) {
       window.dispatchEvent(new Event('storage'));
       setIsAddedToCart(true);
     } catch (e) {
-      alert("Impossible d'ajouter au panier");
+      addToast("Impossible d'ajouter au panier", 'error');
     }
   };
 
   const handleDelete = async () => {
     if (!product) return;
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce produit ? Cette action est irréversible.')) return;
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      addToast('Cliquez encore pour confirmer la suppression', 'info');
+      setTimeout(() => setConfirmingDelete(false), 2500);
+      return;
+    }
     
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       if (!token) {
-        alert('Vous devez être connecté pour supprimer un produit.');
+        addToast('Vous devez être connecté pour supprimer un produit.', 'error');
         return;
       }
       
@@ -182,11 +190,11 @@ export default function ProductDetailsPage({ params }: Props) {
         throw new Error(`Échec de la suppression: ${res.status} ${res.statusText} ${txt}`);
       }
       
-      alert('Produit supprimé avec succès.');
+      addToast('Produit supprimé avec succès.', 'success');
       router.push('/marketplace');
     } catch (err: any) {
       console.error(err);
-      alert(err.message || 'Erreur lors de la suppression');
+      addToast(err.message || 'Erreur lors de la suppression', 'error');
     }
   };
 
@@ -199,16 +207,16 @@ export default function ProductDetailsPage({ params }: Props) {
       if (idx >= 0) {
         favs.splice(idx, 1);
         setIsFavorite(false);
-        alert('Retiré des favoris');
+        addToast('Retiré des favoris', 'success');
       } else {
         favs.push(product.id);
         setIsFavorite(true);
-        alert('Ajouté aux favoris');
+        addToast('Ajouté aux favoris', 'success');
       }
       localStorage.setItem('favorites', JSON.stringify(favs));
     } catch (e) {
       console.error('Favorite toggle error', e);
-      alert('Impossible de mettre à jour les favoris');
+      addToast('Impossible de mettre à jour les favoris', 'error');
     }
   };
 
@@ -221,11 +229,11 @@ export default function ProductDetailsPage({ params }: Props) {
         await navigator.share({ title, url });
       } else {
         await navigator.clipboard.writeText(url);
-        alert('Lien copié dans le presse-papiers');
+        addToast('Lien copié dans le presse-papiers', 'success');
       }
     } catch (e) {
       console.error('Share failed', e);
-      alert('Partage non disponible');
+      addToast('Partage non disponible', 'error');
     }
   };
 
