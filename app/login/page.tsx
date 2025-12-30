@@ -5,6 +5,7 @@ import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { API_BASE_URL } from '../../src/api-config';
+import { useToast } from '../components/ToastProvider';
 
 // Define the Login Page Component
 export default function LoginPage() {
@@ -18,6 +19,7 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const { addToast } = useToast();
 
   // Récupérer le chemin de redirection après connexion
   useEffect(() => {
@@ -84,11 +86,11 @@ export default function LoginPage() {
         sessionStorage.removeItem('redirectAfterLogin');
         // Notify header/auth state
         window.dispatchEvent(new Event('storage'));
-        alert("Connexion réussie!");
+        addToast('Connexion réussie', 'success');
         // Redirect to saved path or home
         router.push(redirectPath);
       } else {
-        alert("Échec de connexion");
+        addToast('Échec de connexion', 'error');
         const msg = data?.message || `HTTP ${res.status} ${res.statusText}`;
         throw new Error(msg);
       }

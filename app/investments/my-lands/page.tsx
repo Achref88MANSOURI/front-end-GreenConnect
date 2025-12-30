@@ -1,14 +1,15 @@
-/* eslint-disable react/no-unescaped-entities */
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { API_BASE_URL } from '@/src/api-config';
+import { motion } from 'framer-motion';
+import { useToast } from '../../components/ToastProvider';
 
 interface LeaseRequest {
   id: number;
@@ -45,7 +46,9 @@ export default function MyLandsPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [actionLoading, setActionLoading] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<'lands' | 'requests'>('lands');
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<number | null>(null);
+  const [leaseStatusMap, setLeaseStatusMap] = useState<Record<number, string>>({});
+  const { addToast } = useToast();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -69,6 +72,32 @@ export default function MyLandsPage() {
 
       const data = await response.json();
       setLands(data);
+
+      // Toast new requests or status changes for owners
+      const nextMap: Record<number, string> = {};
+      data.forEach((land: Land) => {
+        land.investments?.forEach((inv: LeaseRequest) => {
+          nextMap[inv.id] = inv.status;
+
+          const prevStatus = leaseStatusMap[inv.id];
+          const investorName = inv.investor?.name || 'Un investisseur';
+
+          if (!prevStatus) {
+            if (inv.status === 'ACTIVE') {
+              addToast(`${investorName} a demandé à louer ${land.title}`, 'info');
+            }
+          } else if (prevStatus !== inv.status) {
+            if (inv.status === 'APPROVED') {
+              addToast(`Demande approuvée pour ${land.title}`, 'success');
+            } else if (inv.status === 'REJECTED') {
+              addToast(`Demande refusée pour ${land.title}`, 'info');
+            } else if (inv.status === 'ACTIVE') {
+              addToast(`Demande réouverte pour ${land.title}`, 'info');
+            }
+          }
+        });
+      });
+      setLeaseStatusMap(nextMap);
       setLoading(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur');
@@ -94,9 +123,10 @@ export default function MyLandsPage() {
         throw new Error('Erreur lors de l\'approbation');
       }
 
+      // Refresh lands
       await fetchMyLands(token);
       setSuccess('Demande acceptée! Vous pouvez à présent contacter le cultivateur.');
-      setTimeout(() => setSuccess(''), 3000);
+      addToast('Demande acceptée', 'success');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur');
     } finally {
@@ -122,9 +152,10 @@ export default function MyLandsPage() {
         throw new Error('Erreur lors du refus');
       }
 
+      // Refresh lands
       await fetchMyLands(token);
       setSuccess('Demande refusée.');
-      setTimeout(() => setSuccess(''), 3000);
+      addToast('Demande refusée', 'info');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur');
     } finally {
@@ -137,7 +168,10 @@ export default function MyLandsPage() {
   };
 
   const handleDelete = async (landId: number) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette terre?')) {
+    if (confirmingDeleteId !== landId) {
+      setConfirmingDeleteId(landId);
+      addToast('Cliquez à nouveau pour confirmer la suppression', 'info');
+      setTimeout(() => setConfirmingDeleteId(prev => (prev === landId ? null : prev)), 2500);
       return;
     }
 
@@ -158,407 +192,384 @@ export default function MyLandsPage() {
         throw new Error('Erreur lors de la suppression');
       }
 
+      // Refresh lands
       await fetchMyLands(token);
-      setSuccess('Terre supprimée avec succès');
-      setTimeout(() => setSuccess(''), 3000);
+      setSuccess('Terre supprimée avec succès.');
+      addToast('Terre supprimée avec succès', 'success');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur');
+      setError(err instanceof Error ? err.message : 'Erreur lors de la suppression');
     } finally {
       setActionLoading(null);
+      setConfirmingDeleteId(null);
     }
   };
-
-  const allRequests = lands.flatMap(land => 
-    land.investments.map(inv => ({ ...inv, land }))
-  );
-  const pendingRequests = allRequests.filter(req => req.status === 'PENDING');
-  const approvedRequests = allRequests.filter(req => req.status === 'APPROVED');
 
   if (loading) {
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-gradient-to-b from-green-50 via-white to-emerald-50 flex items-center justify-center">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="text-6xl"
-          >
-            🌾
-          </motion.div>
+        <main className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-900 flex items-center justify-center">
+          <div className="text-purple-300 text-xl animate-pulse">Chargement...</div>
         </main>
         <Footer />
       </>
     );
   }
 
+  const totalPending = lands.reduce((sum, land) => sum + land.investments.filter(inv => inv.status === 'ACTIVE').length, 0);
+  const totalApproved = lands.reduce((sum, land) => sum + land.investments.filter(inv => inv.status === 'APPROVED').length, 0);
+  const totalArea = lands.reduce((sum, land) => sum + land.targetAmount, 0);
+
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gradient-to-b from-green-50 via-white to-emerald-50 py-12">
-        <div className="max-w-7xl mx-auto px-4">
-          {/* Header */}
+      <main className="relative min-h-screen bg-gradient-to-br from-amber-50 via-green-50 to-emerald-50 pt-24 pb-16 overflow-hidden">
+        {/* Agricultural Animated Background - Nature Inspired */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <motion.div
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="mb-12"
-          >
-            <button
-              onClick={() => router.back()}
-              className="mb-6 flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-green-700 font-semibold border-2 border-green-200 hover:bg-green-50 transition-all duration-300 shadow-md hover:shadow-lg group"
-            >
-              <motion.span
-                animate={{ x: [0, -5, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >←</motion.span>
-              <span>Retour</span>
-            </button>
+            animate={{ rotate: 360, scale: [1, 1.1, 1] }}
+            transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+            className="absolute top-0 right-0 w-96 h-96 bg-green-300/15 rounded-full blur-3xl"
+          />
+          <motion.div
+            animate={{ rotate: -360, scale: [1, 1.05, 1] }}
+            transition={{ duration: 70, repeat: Infinity, ease: "linear" }}
+            className="absolute bottom-0 left-0 w-96 h-96 bg-amber-300/15 rounded-full blur-3xl"
+          />
+          <motion.div
+            animate={{ y: [0, 40, 0] }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-1/2 right-1/3 w-64 h-64 bg-yellow-400/10 rounded-full blur-3xl"
+          />
+        </div>
 
-            <div className="flex items-center gap-4 mb-4">
-              <motion.div
-                animate={{ rotate: [0, -10, 10, 0] }}
-                transition={{ duration: 3, repeat: Infinity }}
-                className="text-6xl"
-              >
-                🏞️
-              </motion.div>
-              <div>
-                <h1 className="text-5xl font-extrabold bg-gradient-to-r from-green-700 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">
-                  Mes Terres Publiées
-                </h1>
-                <p className="text-lg text-gray-600">Gérez vos terres et demandes de location</p>
+        {/* Retour Button - Fixed Position */}
+        <motion.button
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
+          onClick={() => router.back()}
+          className="fixed left-4 top-24 md:left-6 md:top-24 z-40 inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/90 backdrop-blur-md text-amber-800 font-semibold border border-amber-300/60 hover:bg-white hover:border-amber-500/80 transition-all duration-300 shadow-lg hover:shadow-xl"
+        >
+          <motion.span animate={{ x: [0, -4, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>←</motion.span>
+          <span>Retour</span>
+        </motion.button>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4">
+          {/* Premium Header */}
+          <motion.div
+            initial={{ y: -30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className="mb-14"
+          >
+            <div className="flex items-end justify-between mb-10">
+              <div className="flex items-end gap-6">
+                <motion.div
+                  animate={{ y: [0, -15, 0], rotate: [0, 8, -8, 0], scale: [1, 1.1, 1] }}
+                  transition={{ duration: 4, repeat: Infinity }}
+                  className="text-7xl drop-shadow-lg"
+                >
+                  🌾
+                </motion.div>
+                <div>
+                  <h1 className="text-7xl font-black bg-gradient-to-r from-amber-700 via-green-700 to-emerald-800 bg-clip-text text-transparent mb-1">
+                    Mes Terres
+                  </h1>
+                  <p className="text-lg text-green-700/70 font-medium">Cultivez votre portefeuille agricole et gérez vos récoltes</p>
+                </div>
               </div>
+              <Link
+                href="/investments/create"
+                className="inline-flex items-center gap-2 px-10 py-4 bg-gradient-to-r from-amber-600 via-yellow-500 to-green-600 hover:from-amber-700 hover:via-yellow-600 hover:to-green-700 text-white font-bold text-lg rounded-2xl shadow-xl hover:shadow-amber-400/50 transition-all duration-300 hover:scale-105 group"
+              >
+                <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} className="text-2xl">🌱</motion.span>
+                <span>Ajouter Terre</span>
+              </Link>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg"
+            {/* Agricultural Stats Dashboard */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+              {/* Total Lands */}
+              <motion.div 
+                whileHover={{ y: -6, boxShadow: '0 20px 50px rgba(120, 53, 15, 0.2)' }}
+                className="group bg-gradient-to-br from-amber-600/30 to-amber-700/20 backdrop-blur-xl border border-amber-500/40 rounded-2xl p-6 shadow-lg hover:border-amber-500/70 transition-all"
               >
-                <p className="text-sm opacity-90 mb-1">Total Terres</p>
-                <p className="text-4xl font-bold">{lands.length}</p>
+                <p className="text-sm text-amber-800 font-bold mb-2">🏞️ Terres Totales</p>
+                <div className="flex items-end justify-between">
+                  <p className="text-5xl font-black text-amber-900">{lands.length}</p>
+                  <motion.div animate={{ y: [0, -3, 0] }} transition={{ duration: 2, repeat: Infinity }} className="text-2xl">📊</motion.div>
+                </div>
+                <div className="mt-3 h-1 bg-amber-700/30 rounded-full overflow-hidden">
+                  <motion.div initial={{ width: 0 }} animate={{ width: '80%' }} transition={{ duration: 1.5 }} className="h-full bg-gradient-to-r from-amber-500 to-yellow-500" />
+                </div>
               </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg"
+
+              {/* Active Requests */}
+              <motion.div 
+                whileHover={{ y: -6, boxShadow: '0 20px 50px rgba(220, 38, 38, 0.2)' }}
+                className="group bg-gradient-to-br from-red-500/20 to-red-600/10 backdrop-blur-xl border border-red-500/40 rounded-2xl p-6 shadow-lg hover:border-red-500/70 transition-all"
               >
-                <p className="text-sm opacity-90 mb-1">Demandes en Attente</p>
-                <p className="text-4xl font-bold">{pendingRequests.length}</p>
+                <p className="text-sm text-red-800 font-bold mb-2">🔔 Demandes Actives</p>
+                <div className="flex items-end justify-between">
+                  <p className="text-5xl font-black text-red-700">{totalPending}</p>
+                  <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} className="text-2xl">🌾</motion.div>
+                </div>
+                <div className="mt-3 h-1 bg-red-700/30 rounded-full overflow-hidden">
+                  <motion.div initial={{ width: 0 }} animate={{ width: '60%' }} transition={{ duration: 1.5, delay: 0.2 }} className="h-full bg-gradient-to-r from-red-500 to-orange-500" />
+                </div>
               </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg"
+
+              {/* Approved */}
+              <motion.div 
+                whileHover={{ y: -6, boxShadow: '0 20px 50px rgba(34, 197, 94, 0.2)' }}
+                className="group bg-gradient-to-br from-green-600/30 to-emerald-700/20 backdrop-blur-xl border border-green-500/40 rounded-2xl p-6 shadow-lg hover:border-green-500/70 transition-all"
               >
-                <p className="text-sm opacity-90 mb-1">Locations Actives</p>
-                <p className="text-4xl font-bold">{approvedRequests.length}</p>
+                <p className="text-sm text-green-800 font-bold mb-2">✓ Approuvées</p>
+                <div className="flex items-end justify-between">
+                  <p className="text-5xl font-black text-green-700">{totalApproved}</p>
+                  <motion.div animate={{ y: [0, -4, 0] }} transition={{ duration: 2, repeat: Infinity }} className="text-2xl">✨</motion.div>
+                </div>
+                <div className="mt-3 h-1 bg-green-700/30 rounded-full overflow-hidden">
+                  <motion.div initial={{ width: 0 }} animate={{ width: '75%' }} transition={{ duration: 1.5, delay: 0.4 }} className="h-full bg-gradient-to-r from-green-500 to-emerald-500" />
+                </div>
               </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                onClick={() => router.push('/investments/create')}
-                className="bg-gradient-to-br from-emerald-600 to-green-700 rounded-2xl p-6 text-white shadow-lg cursor-pointer hover:shadow-2xl transition-all duration-300"
+
+              {/* Total Area */}
+              <motion.div 
+                whileHover={{ y: -6, boxShadow: '0 20px 50px rgba(120, 53, 15, 0.2)' }}
+                className="group bg-gradient-to-br from-yellow-600/30 to-amber-700/20 backdrop-blur-xl border border-yellow-500/40 rounded-2xl p-6 shadow-lg hover:border-yellow-500/70 transition-all"
               >
-                <p className="text-sm opacity-90 mb-1">Ajouter</p>
-                <p className="text-4xl font-bold">+</p>
+                <p className="text-sm text-yellow-800 font-bold mb-2">🌻 Surface Totale</p>
+                <div className="flex items-end justify-between">
+                  <div>
+                    <p className="text-5xl font-black text-yellow-800">{totalArea}</p>
+                    <p className="text-xs text-yellow-700/70 mt-1 font-bold">hectares</p>
+                  </div>
+                  <motion.div animate={{ rotate: [0, 360] }} transition={{ duration: 25, repeat: Infinity, ease: "linear" }} className="text-2xl">🌾</motion.div>
+                </div>
+                <div className="mt-3 h-1 bg-yellow-700/30 rounded-full overflow-hidden">
+                  <motion.div initial={{ width: 0 }} animate={{ width: '70%' }} transition={{ duration: 1.5, delay: 0.6 }} className="h-full bg-gradient-to-r from-yellow-500 to-amber-500" />
+                </div>
               </motion.div>
             </div>
           </motion.div>
 
-          {/* Success/Error Messages */}
-          <AnimatePresence>
-            {success && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="mb-6 p-4 bg-emerald-50 border-2 border-emerald-200 rounded-xl text-emerald-700 shadow-md flex items-center gap-3"
-              >
-                <span className="text-2xl">✓</span>
-                <span className="font-semibold">{success}</span>
-              </motion.div>
-            )}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-700 shadow-md flex items-center gap-3"
-              >
-                <span className="text-2xl">⚠</span>
-                <span className="font-semibold">{error}</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {error && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-8 p-5 bg-red-100 border-l-4 border-red-500 rounded-2xl text-red-700 shadow-lg">
+              <p className="font-bold">⚠️ {error}</p>
+            </motion.div>
+          )}
 
-          {/* Tabs */}
-          <div className="flex gap-4 mb-8 border-b-2 border-gray-200">
-            <button
-              onClick={() => setActiveTab('lands')}
-              className={`relative px-8 py-4 font-bold text-lg transition-all duration-300 ${
-                activeTab === 'lands'
-                  ? 'text-green-700'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <span>🏞️</span>
-                <span>Mes Terres ({lands.length})</span>
-              </span>
-              {activeTab === 'lands' && (
+          {success && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-8 p-5 bg-green-100 border-l-4 border-green-600 rounded-2xl text-green-700 shadow-lg">
+              <p className="font-bold">✓ {success}</p>
+            </motion.div>
+          )}
+
+          {lands.length === 0 ? (
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white/95 backdrop-blur rounded-3xl p-20 text-center shadow-2xl border border-green-200">
+              <motion.div animate={{ y: [0, -20, 0], scale: [1, 1.1, 1] }} transition={{ duration: 2.5, repeat: Infinity }} className="text-9xl mb-8">🌱</motion.div>
+              <h2 className="text-4xl font-black text-amber-900 mb-4">Aucune terre publiée</h2>
+              <p className="text-green-700/70 mb-10 text-lg">Commencez à cultiver votre portefeuille dès maintenant!</p>
+              <Link
+                href="/investments/create"
+                className="inline-flex items-center gap-3 px-12 py-4 bg-gradient-to-r from-amber-600 to-green-600 hover:from-amber-700 hover:to-green-700 text-white font-bold text-lg rounded-2xl shadow-xl hover:shadow-amber-400/50 transition-all hover:scale-105"
+              >
+                <span>🌾</span>
+                <span>Publier une Terre</span>
+              </Link>
+            </motion.div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {lands.map((land, index) => (
                 <motion.div
-                  layoutId="activeTab"
-                  className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full"
-                />
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('requests')}
-              className={`relative px-8 py-4 font-bold text-lg transition-all duration-300 ${
-                activeTab === 'requests'
-                  ? 'text-green-700'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <span>📨</span>
-                <span>Demandes ({pendingRequests.length})</span>
-              </span>
-              {activeTab === 'requests' && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full"
-                />
-              )}
-            </button>
-          </div>
+                  key={land.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1, duration: 0.5 }}
+                  whileHover={{ y: -8, boxShadow: '0 30px 60px rgba(180, 83, 9, 0.2)' }}
+                  className="group relative h-full bg-gradient-to-br from-white/95 via-amber-50/90 to-green-50/90 backdrop-blur-xl border border-amber-200/80 rounded-3xl shadow-xl overflow-hidden transition-all duration-300 hover:border-green-300/80"
+                >
+                  {/* Gradient Overlay - Nature Inspired */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-200/0 via-transparent to-green-300/0 group-hover:from-amber-200/5 group-hover:to-green-300/5 transition-all duration-300" />
 
-          {/* Content */}
-          <AnimatePresence mode="wait">
-            {activeTab === 'lands' ? (
-              <motion.div
-                key="lands"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="space-y-6"
-              >
-                {lands.length === 0 ? (
-                  <motion.div
-                    initial={{ scale: 0.9 }}
-                    animate={{ scale: 1 }}
-                    className="bg-white rounded-2xl border-2 border-green-200 p-16 text-center shadow-xl"
-                  >
-                    <div className="text-8xl mb-6">🌱</div>
-                    <h2 className="text-3xl font-bold text-gray-900 mb-4">Aucune terre publiée</h2>
-                    <p className="text-gray-600 mb-8 text-lg">Publiez votre première terre et commencez à gagner des revenus!</p>
-                    <Link
-                      href="/investments/create"
-                      className="inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold text-lg rounded-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
-                    >
-                      <span>➕</span>
-                      <span>Publier une Terre</span>
-                    </Link>
-                  </motion.div>
-                ) : (
-                  lands.map((land, index) => (
-                    <motion.div
-                      key={land.id}
-                      initial={{ opacity: 0, y: 50 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      whileHover={{ scale: 1.01 }}
-                      className="bg-white rounded-2xl border-2 border-green-100 shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden"
-                    >
-                      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 p-6">
-                        {/* Image */}
-                        <div className="rounded-xl overflow-hidden h-56 lg:h-auto bg-gradient-to-br from-green-100 to-emerald-200 relative">
-                          {land.images && land.images.length > 0 ? (
-                            <Image
-                              src={land.images[0]?.startsWith('http') ? land.images[0] : `${API_BASE_URL}${land.images[0]}`}
-                              alt={land.title}
-                              fill
-                              className="object-cover group-hover:scale-110 transition-transform duration-500"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-green-300 text-6xl">🌾</div>
-                          )}
-                        </div>
+                  {/* Image Section */}
+                  <div className="relative h-56 overflow-hidden bg-gradient-to-br from-amber-200 to-green-200 group-hover:scale-105 transition-transform duration-500">
+                    {land.images && land.images.length > 0 ? (
+                      <Image
+                        src={land.images[0]?.startsWith('http') ? land.images[0] : `${API_BASE_URL}${land.images[0]}`}
+                        alt={land.title}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-green-300/30 text-6xl">🌾</div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-black/5 to-transparent" />
+                    
+                    {/* Status Badge */}
+                    <div className="absolute top-4 right-4 z-10">
+                      <motion.div whileHover={{ scale: 1.1 }} className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold backdrop-blur-md border shadow-lg ${
+                        land.status === 'available'
+                          ? 'bg-green-600/90 text-white border-green-500'
+                          : land.status === 'reserved'
+                          ? 'bg-amber-600/90 text-white border-amber-500'
+                          : 'bg-yellow-600/90 text-white border-yellow-500'
+                      }`}>
+                        <span>{land.status === 'available' ? '✓' : land.status === 'reserved' ? '⏳' : '🌾'}</span>
+                        <span>{land.status === 'available' ? 'Disponible' : land.status === 'reserved' ? 'Réservée' : 'Louée'}</span>
+                      </motion.div>
+                    </div>
 
-                        {/* Info */}
-                        <div className="lg:col-span-2 space-y-4">
-                          <div>
-                            <h3 className="text-2xl font-bold text-green-900 mb-2">{land.title}</h3>
-                            <p className="text-gray-600 line-clamp-2">{land.description}</p>
-                          </div>
-
-                          <div className="flex flex-wrap gap-3">
-                            <div className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-lg border border-green-200">
-                              <span>📍</span>
-                              <span className="font-semibold text-green-700">{land.location}</span>
-                            </div>
-                            <div className="flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-200">
-                              <span>🏞️</span>
-                              <span className="font-semibold text-emerald-700">{land.targetAmount} ha</span>
-                            </div>
-                            <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
-                              <span>💰</span>
-                              <span className="font-semibold text-blue-700">{land.currentAmount} TND/mois</span>
-                            </div>
-                          </div>
-
-                          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                            <p className="text-sm text-gray-600 mb-2">
-                              <span className="font-semibold">{land.investments.length}</span> demande{land.investments.length !== 1 ? 's' : ''} de location
-                            </p>
-                            <div className="flex gap-2">
-                              {land.investments.filter(inv => inv.status === 'PENDING').length > 0 && (
-                                <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-semibold">
-                                  {land.investments.filter(inv => inv.status === 'PENDING').length} en attente
-                                </span>
-                              )}
-                              {land.investments.filter(inv => inv.status === 'APPROVED').length > 0 && (
-                                <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold">
-                                  {land.investments.filter(inv => inv.status === 'APPROVED').length} approuvée{land.investments.filter(inv => inv.status === 'APPROVED').length > 1 ? 's' : ''}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="space-y-3">
-                          <Link
-                            href={`/investments/${land.id}`}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300"
-                          >
-                            <span>👁️</span>
-                            <span>Voir</span>
-                          </Link>
-                          <button
-                            onClick={() => handleEdit(land.id)}
-                            disabled={actionLoading === land.id}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50"
-                          >
-                            <span>✏️</span>
-                            <span>Modifier</span>
-                          </button>
-                          <button
-                            onClick={() => handleDelete(land.id)}
-                            disabled={actionLoading === land.id}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50"
-                          >
-                            <span>🗑️</span>
-                            <span>Supprimer</span>
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))
-                )}
-              </motion.div>
-            ) : (
-              <motion.div
-                key="requests"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-6"
-              >
-                {pendingRequests.length === 0 ? (
-                  <div className="bg-white rounded-2xl border-2 border-gray-200 p-16 text-center">
-                    <div className="text-7xl mb-4">📭</div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Aucune demande en attente</h2>
-                    <p className="text-gray-600">Les nouvelles demandes apparaîtront ici</p>
+                    {/* Quick Info Overlay */}
+                    <div className="absolute bottom-4 left-4 right-4 flex gap-2">
+                      <motion.div whileHover={{ scale: 1.05 }} className={`backdrop-blur-md rounded-lg px-3 py-2 text-xs font-bold border shadow-md transition-all ${
+                        land.investments.filter(inv => inv.status === 'ACTIVE').length > 0
+                          ? 'bg-amber-100/90 text-amber-800 border-amber-300'
+                          : 'bg-white/90 text-slate-800 border-slate-200'
+                      }`}>
+                        📋 {land.investments.filter(inv => inv.status === 'ACTIVE').length} demandes
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.05 }} className={`backdrop-blur-md rounded-lg px-3 py-2 text-xs font-bold border shadow-md transition-all ${
+                        land.investments.filter(inv => inv.status === 'APPROVED').length > 0
+                          ? 'bg-green-100/90 text-green-800 border-green-300'
+                          : 'bg-white/90 text-slate-800 border-slate-200'
+                      }`}>
+                        ✓ {land.investments.filter(inv => inv.status === 'APPROVED').length} acceptées
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.05 }} className="bg-white/90 backdrop-blur-md rounded-lg px-3 py-2 text-xs font-bold text-green-800 border border-green-300/60 shadow-md">
+                        📐 {land.targetAmount} ha
+                      </motion.div>
+                    </div>
                   </div>
-                ) : (
-                  pendingRequests.map((request, index) => (
-                    <motion.div
-                      key={request.id}
-                      initial={{ opacity: 0, x: 50 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      whileHover={{ scale: 1.02 }}
-                      className="bg-white rounded-2xl border-2 border-amber-200 shadow-lg hover:shadow-2xl transition-all duration-300 p-6"
-                    >
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-2 space-y-4">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h3 className="text-xl font-bold text-gray-900 mb-1">{request.land.title}</h3>
-                              <p className="text-sm text-gray-600">{request.land.location} • {request.land.targetAmount} ha</p>
-                            </div>
-                            <span className="bg-amber-100 text-amber-700 px-4 py-2 rounded-full text-sm font-bold">
-                              ⏳ En attente
-                            </span>
-                          </div>
 
-                          <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                            <p className="text-xs text-blue-600 font-semibold uppercase mb-2">Demandeur</p>
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                                {request.investor.name.charAt(0)}
-                              </div>
-                              <div>
-                                <p className="font-bold text-gray-900">{request.investor.name}</p>
-                                <p className="text-sm text-gray-600">{request.investor.email}</p>
-                              </div>
-                            </div>
-                          </div>
+                  {/* Content Section */}
+                  <div className="relative z-10 p-6 space-y-4">
+                    <div>
+                      <h3 className="text-2xl font-black text-amber-900 mb-2 group-hover:text-green-700 transition-colors">
+                        {land.title}
+                      </h3>
+                      <p className="text-green-700/60 text-sm line-clamp-2">{land.description}</p>
+                    </div>
 
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
-                              <p className="text-xs text-emerald-600 font-semibold mb-1">Montant Proposé</p>
-                              <p className="text-2xl font-bold text-emerald-700">{request.amount} TND</p>
-                            </div>
-                            <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
-                              <p className="text-xs text-purple-600 font-semibold mb-1">Durée</p>
-                              <p className="text-2xl font-bold text-purple-700">{request.customDurationMonths || '-'} mois</p>
-                            </div>
-                          </div>
-
-                          <div className="text-sm text-gray-600">
-                            Demandé le {new Date(request.investedAt).toLocaleDateString('fr-FR', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </div>
-                        </div>
-
-                        <div className="space-y-3">
-                          <button
-                            onClick={() => handleApprove(request.id)}
-                            disabled={actionLoading === request.id}
-                            className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl font-bold hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <span>✓</span>
-                            <span>{actionLoading === request.id ? 'Traitement...' : 'Accepter'}</span>
-                          </button>
-                          <button
-                            onClick={() => handleReject(request.id)}
-                            disabled={actionLoading === request.id}
-                            className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-bold hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <span>✗</span>
-                            <span>{actionLoading === request.id ? 'Traitement...' : 'Refuser'}</span>
-                          </button>
-                          <Link
-                            href={`/investments/${request.land.id}`}
-                            className="w-full flex items-center justify-center gap-2 px-6 py-4 border-2 border-blue-600 text-blue-700 rounded-xl font-bold hover:bg-blue-50 transition-all duration-300"
-                          >
-                            <span>👁️</span>
-                            <span>Voir la Terre</span>
-                          </Link>
-                        </div>
+                    {/* Location & Price */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 bg-gradient-to-r from-amber-100 to-yellow-100 backdrop-blur px-4 py-2.5 rounded-xl border border-amber-300/60 group-hover:border-amber-400/80 transition-all">
+                        <span className="text-lg">📍</span>
+                        <span className="text-amber-900 font-medium text-sm">{land.location}</span>
                       </div>
-                    </motion.div>
-                  ))
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                      <div className="flex items-center gap-3 bg-gradient-to-r from-green-100 to-emerald-100 backdrop-blur px-4 py-2.5 rounded-xl border border-green-400/60">
+                        <span className="text-lg">💰</span>
+                        <span className="text-green-800 font-black text-sm">{land.currentAmount} TND/mois</span>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-3 gap-2 pt-3">
+                      <Link
+                        href={`/investments/${land.id}`}
+                        className="py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl text-xs font-bold text-center transition-all shadow-md hover:shadow-green-500/50"
+                      >
+                        Voir
+                      </Link>
+                      <button
+                        onClick={() => handleEdit(land.id)}
+                        disabled={actionLoading !== null}
+                        className="py-2.5 border-2 border-amber-600 text-amber-700 hover:bg-amber-100/50 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        onClick={() => handleDelete(land.id)}
+                        disabled={actionLoading !== null}
+                        className="py-2.5 border-2 border-red-500 text-red-600 hover:bg-red-100/50 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+
+                    {/* Lease Requests */}
+                    {land.investments && land.investments.length > 0 && (
+                      <motion.div initial={false} className="pt-4 border-t border-green-200">
+                        <button className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 rounded-xl border border-green-300/60 transition-all group/expand">
+                          <div className="flex items-center gap-2">
+                            <span>📋</span>
+                            <span className="text-amber-900 font-bold text-sm">Demandes ({land.investments.length})</span>
+                          </div>
+                          <motion.span animate={{ rotate: 0 }} className="text-green-700">▼</motion.span>
+                        </button>
+                        <div className="mt-3 space-y-2 max-h-96 overflow-y-auto">
+                          {land.investments.map(request => (
+                            <motion.div
+                              key={request.id}
+                              whileHover={{ x: 4 }}
+                              className={`backdrop-blur border rounded-lg p-3 hover:shadow-md transition-all ${
+                                request.status === 'ACTIVE'
+                                  ? 'bg-gradient-to-r from-amber-100/70 to-orange-100/70 border-amber-300/70'
+                                  : request.status === 'APPROVED'
+                                  ? 'bg-gradient-to-r from-green-100/70 to-emerald-100/70 border-green-300/70'
+                                  : 'bg-gradient-to-r from-red-100/70 to-pink-100/70 border-red-300/70'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2 mb-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 ${
+                                    request.status === 'ACTIVE'
+                                      ? 'bg-gradient-to-br from-amber-500 to-orange-600'
+                                      : request.status === 'APPROVED'
+                                      ? 'bg-gradient-to-br from-green-500 to-emerald-600'
+                                      : 'bg-gradient-to-br from-red-500 to-pink-600'
+                                  }`}>
+                                    {request.investor?.name?.charAt(0).toUpperCase() || 'L'}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-amber-900 text-xs font-bold truncate">{request.investor?.name ?? 'Locataire'}</p>
+                                    <p className="text-amber-700/60 text-xs truncate">{request.investor?.email ?? ''}</p>
+                                  </div>
+                                </div>
+                                {request.status === 'ACTIVE' ? (
+                                  <div className="flex gap-2 shrink-0">
+                                    <button
+                                      onClick={() => handleApprove(request.id)}
+                                      disabled={actionLoading === request.id}
+                                      className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50 shadow-md hover:shadow-green-500/40"
+                                    >
+                                      {actionLoading === request.id ? '...' : '✓ Accepter'}
+                                    </button>
+                                    <button
+                                      onClick={() => handleReject(request.id)}
+                                      disabled={actionLoading === request.id}
+                                      className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50 shadow-md hover:shadow-red-500/40"
+                                    >
+                                      {actionLoading === request.id ? '...' : '✗ Refuser'}
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className={`text-xs font-bold px-3 py-1.5 rounded-lg shrink-0 border ${
+                                    request.status === 'APPROVED'
+                                      ? 'bg-green-600/20 text-green-800 border-green-400'
+                                      : 'bg-red-600/20 text-red-800 border-red-400'
+                                  }`}>
+                                    {request.status === 'APPROVED' ? '✓ Acceptée' : '✗ Refusée'}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 text-amber-800/70 text-xs">
+                                <p>💰 {request.amount} TND</p>
+                                <p>⏱️ {request.customDurationMonths || '?'} mois</p>
+                                <p>📅 {new Date(request.investedAt).toLocaleDateString('fr-FR')}</p>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
       <Footer />

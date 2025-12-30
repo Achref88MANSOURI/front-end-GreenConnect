@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { API_BASE_URL } from '../../../src/api-config';
+import { useToast } from '../../components/ToastProvider';
 import { 
   Package, Plus, Edit, Trash2, Eye, ArrowLeft, Phone, MapPin,
   Loader2, AlertCircle, ShoppingBag, Calendar, DollarSign
@@ -27,6 +28,8 @@ export default function MyProductsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [confirmingId, setConfirmingId] = useState<number | null>(null);
+  const { addToast } = useToast();
 
   const fetchProducts = async () => {
     const token = localStorage.getItem('token');
@@ -68,7 +71,12 @@ export default function MyProductsPage() {
   }, []);
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Voulez-vous vraiment supprimer ce produit ?')) return;
+    if (confirmingId !== id) {
+      setConfirmingId(id);
+      addToast('Cliquez encore pour confirmer la suppression', 'info');
+      setTimeout(() => setConfirmingId(prev => (prev === id ? null : prev)), 2500);
+      return;
+    }
 
     const token = localStorage.getItem('token');
     try {
@@ -80,8 +88,11 @@ export default function MyProductsPage() {
       if (!res.ok) throw new Error('Erreur lors de la suppression');
 
       setProducts(prev => prev.filter(p => p.id !== id));
+      addToast('Produit supprimé', 'success');
     } catch (err: any) {
-      alert(err.message);
+      addToast(err.message, 'error');
+    } finally {
+      setConfirmingId(null);
     }
   };
 

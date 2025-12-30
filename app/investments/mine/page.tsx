@@ -8,6 +8,7 @@ import Image from 'next/image';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { API_BASE_URL } from '@/src/api-config';
+import { useToast } from '../../components/ToastProvider';
 
 interface Owner {
   id: number;
@@ -43,6 +44,8 @@ export default function MyInvestmentsPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [confirmingCancelId, setConfirmingCancelId] = useState<number | null>(null);
+  const { addToast } = useToast();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -73,8 +76,11 @@ export default function MyInvestmentsPage() {
     }
   };
 
-  const handleCancelRequest = async (leaseId: number) => {
-    if (!confirm('Êtes-vous sûr de vouloir annuler cette demande de location?')) {
+  const handleRemoveLease = async (leaseId: number, status: string) => {
+    if (confirmingCancelId !== leaseId) {
+      setConfirmingCancelId(leaseId);
+      addToast(status === 'ACTIVE' ? 'Cliquez à nouveau pour annuler la demande' : 'Cliquez à nouveau pour supprimer cette entrée', 'info');
+      setTimeout(() => setConfirmingCancelId(prev => (prev === leaseId ? null : prev)), 2500);
       return;
     }
 
@@ -92,17 +98,18 @@ export default function MyInvestmentsPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors de l\'annulation');
+        throw new Error('Erreur lors de la suppression');
       }
 
-      // Refresh investments list
       await fetchMyInvestments(token);
-      setSuccess('Demande annulée avec succès.');
-      setTimeout(() => setSuccess(''), 3000);
+      const msg = status === 'ACTIVE' ? 'Demande annulée avec succès' : 'Entrée supprimée de vos locations';
+      setSuccess(msg);
+      addToast(msg, 'success');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de l\'annulation');
+      setError(err instanceof Error ? err.message : 'Erreur lors de la suppression');
     } finally {
       setActionLoading(null);
+      setConfirmingCancelId(null);
     }
   };
 
@@ -169,18 +176,22 @@ export default function MyInvestmentsPage() {
             </div>
 
             {/* Performance Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <motion.div whileHover={{ y: -4 }} className="bg-white/90 backdrop-blur rounded-2xl p-5 shadow-lg border border-teal-100">
                 <p className="text-sm text-teal-600/70 font-bold mb-2">🌾 Total</p>
                 <p className="text-4xl font-black text-teal-700">{investments.length}</p>
               </motion.div>
               <motion.div whileHover={{ y: -4 }} className="bg-white/90 backdrop-blur rounded-2xl p-5 shadow-lg border border-emerald-100">
-                <p className="text-sm text-emerald-600/70 font-bold mb-2">✓ Actives</p>
-                <p className="text-4xl font-black text-emerald-700">{investments.filter(inv => inv.status === 'APPROVED' || inv.status === 'ACTIVE').length}</p>
+                <p className="text-sm text-emerald-600/70 font-bold mb-2">✓ Approuvées</p>
+                <p className="text-4xl font-black text-emerald-700">{investments.filter(inv => inv.status === 'APPROVED').length}</p>
               </motion.div>
-              <motion.div whileHover={{ y: -4 }} className="bg-white/90 backdrop-blur rounded-2xl p-5 shadow-lg border border-green-100">
-                <p className="text-sm text-green-600/70 font-bold mb-2">⏳ En cours</p>
-                <p className="text-4xl font-black text-green-700">{investments.filter(inv => inv.status === 'PENDING').length}</p>
+              <motion.div whileHover={{ y: -4 }} className="bg-white/90 backdrop-blur rounded-2xl p-5 shadow-lg border border-amber-100">
+                <p className="text-sm text-amber-600/70 font-bold mb-2">⏳ En attente</p>
+                <p className="text-4xl font-black text-amber-700">{investments.filter(inv => inv.status === 'ACTIVE').length}</p>
+              </motion.div>
+              <motion.div whileHover={{ y: -4 }} className="bg-white/90 backdrop-blur rounded-2xl p-5 shadow-lg border border-red-100">
+                <p className="text-sm text-red-600/70 font-bold mb-2">✗ Refusées</p>
+                <p className="text-4xl font-black text-red-700">{investments.filter(inv => inv.status === 'REJECTED').length}</p>
               </motion.div>
               <motion.div whileHover={{ y: -4 }} className="bg-white/90 backdrop-blur rounded-2xl p-5 shadow-lg border border-cyan-100">
                 <p className="text-sm text-cyan-600/70 font-bold mb-2">💰 Estimé</p>
@@ -306,18 +317,21 @@ export default function MyInvestmentsPage() {
                                 <p className="text-lg font-black text-blue-700">{investment.customDurationMonths || '-'}</p>
                                 <p className="text-xs text-blue-600">mois</p>
                               </div>
-                              <div className={`rounded-lg p-3 text-center text-xs font-bold border ${
+                              <div className={`rounded-lg p-3 text-center flex flex-col items-center justify-center border font-bold ${
                                 investment.status === 'APPROVED'
-                                  ? 'bg-emerald-100 border-emerald-300 text-emerald-700'
+                                  ? 'bg-emerald-100/80 border-emerald-400 text-emerald-800 shadow-md shadow-emerald-200'
                                   : investment.status === 'ACTIVE'
-                                  ? 'bg-amber-100 border-amber-300 text-amber-700'
+                                  ? 'bg-amber-100/80 border-amber-400 text-amber-800 shadow-md shadow-amber-200'
                                   : investment.status === 'REJECTED'
-                                  ? 'bg-red-100 border-red-300 text-red-700'
-                                  : 'bg-gray-100 border-gray-300 text-gray-700'
+                                  ? 'bg-red-100/80 border-red-400 text-red-800 shadow-md shadow-red-200'
+                                  : 'bg-gray-100/80 border-gray-400 text-gray-800 shadow-md shadow-gray-200'
                               }`}>
-                                {investment.status === 'APPROVED' ? '✓ Actif' : 
-                                 investment.status === 'ACTIVE' ? '⏳ En cours' : 
-                                 investment.status === 'REJECTED' ? '✗ Refusé' : investment.status}
+                                <span className="text-lg">{investment.status === 'APPROVED' ? '✓' : 
+                                 investment.status === 'ACTIVE' ? '⏳' : 
+                                 investment.status === 'REJECTED' ? '✗' : '?'}</span>
+                                <span className="text-xs leading-tight mt-1">{investment.status === 'APPROVED' ? 'Acceptée' : 
+                                 investment.status === 'ACTIVE' ? 'En attente' : 
+                                 investment.status === 'REJECTED' ? 'Refusée' : investment.status}</span>
                               </div>
                             </div>
 
@@ -328,13 +342,17 @@ export default function MyInvestmentsPage() {
                               >
                                 Voir Détails
                               </Link>
-                              {investment.status === 'ACTIVE' && (
+                              {['ACTIVE', 'APPROVED', 'REJECTED'].includes(investment.status) && (
                                 <button
-                                  onClick={() => handleCancelRequest(investment.id)}
+                                  onClick={() => handleRemoveLease(investment.id, investment.status)}
                                   disabled={actionLoading === investment.id}
-                                  className="px-4 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white rounded-lg font-bold text-sm transition-all shadow-md"
+                                  className={`px-4 py-2 text-white rounded-lg font-bold text-sm transition-all shadow-md ${
+                                    investment.status === 'ACTIVE'
+                                      ? 'bg-red-500 hover:bg-red-600 disabled:bg-gray-400'
+                                      : 'bg-slate-600 hover:bg-slate-700 disabled:bg-gray-400'
+                                  }`}
                                 >
-                                  {actionLoading === investment.id ? '...' : '✗ Annuler'}
+                                  {actionLoading === investment.id ? '...' : investment.status === 'ACTIVE' ? '✗ Annuler' : '🗑️ Supprimer'}
                                 </button>
                               )}
                               <div className="text-xs text-teal-600/60 py-2 px-3 bg-teal-50 rounded-lg border border-teal-200 whitespace-nowrap">

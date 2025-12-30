@@ -4,10 +4,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
+import { useToast } from '../../../components/ToastProvider';
 
 export default function EditProductPage() {
   const { id } = useParams() as { id?: string };
   const router = useRouter();
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -67,7 +69,7 @@ export default function EditProductPage() {
       const numId = Number(id);
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
       if (!token) {
-        alert('Vous devez être connecté pour modifier un produit.');
+        addToast('Vous devez être connecté pour modifier un produit.', 'error');
         router.push('/login');
         return;
       }
@@ -110,11 +112,11 @@ export default function EditProductPage() {
         }
       }
 
-      alert('Produit mis à jour');
+      addToast('Produit mis à jour', 'success');
       router.push(`/products/${numId}`);
     } catch (err: any) {
       console.error(err);
-      alert(err.message || 'Erreur lors de la mise à jour');
+      addToast(err.message || 'Erreur lors de la mise à jour', 'error');
     }
   };
 
