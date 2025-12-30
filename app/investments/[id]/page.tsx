@@ -1,12 +1,22 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react/no-unescaped-entities */
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Pagination, Autoplay } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
 import { API_BASE_URL } from '@/src/api-config';
+import Header from '../../components/Header';
+import Footer from '../../components/Footer';
 
 interface Land {
+  availableFrom: any;
   id: number;
   title: string;
   description: string;
@@ -39,6 +49,8 @@ export default function LandDetailPage() {
     farmingPlan: '',
   });
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [showLeaseForm, setShowLeaseForm] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   const landId = Array.isArray(params.id) ? params.id[0] : params.id;
 
@@ -108,7 +120,8 @@ export default function LandDetailPage() {
 
       if (!response.ok) throw new Error('Failed to submit lease request');
       
-      alert('Lease request submitted successfully!');
+      setShowLeaseForm(false);
+      alert('✓ Demande de location envoyée avec succès!');
       setLeaseForm({ seasonStartDate: '', customDurationMonths: '', farmingPlan: '' });
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Error submitting lease request');
@@ -117,23 +130,46 @@ export default function LandDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-emerald-200 border-t-emerald-600"></div>
-          <p className="mt-4 text-emerald-700 font-medium">Chargement...</p>
+      <>
+        <Header />
+        <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center"
+          >
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="inline-block w-16 h-16 border-4 border-green-200 border-t-green-600 rounded-full mb-4"
+            />
+            <p className="text-green-700 font-semibold">Chargement des détails...</p>
+          </motion.div>
         </div>
-      </div>
+        <Footer />
+      </>
     );
   }
 
   if (error || !land) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50 flex items-center justify-center">
-        <div className="text-center text-red-600">
-          <h1 className="text-2xl font-bold mb-2">Erreur</h1>
-          <p>{error || 'Terre non trouvée'}</p>
+      <>
+        <Header />
+        <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center">
+          <div className="text-center p-8 bg-white rounded-2xl shadow-xl">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Erreur</h1>
+            <p className="text-gray-600">{error || 'Terre non trouvée'}</p>
+            <button
+              onClick={() => router.back()}
+              className="mt-6 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
+            >
+              Retour
+            </button>
+          </div>
         </div>
-      </div>
+        <Footer />
+      </>
     );
   }
 
@@ -143,204 +179,282 @@ export default function LandDetailPage() {
   const maxMonths = land.expectedROI;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50 py-12">
-      <div className="max-w-6xl mx-auto px-4">
-        {/* Back Button */}
-        <button
-          onClick={() => router.back()}
-          className="mb-6 flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-emerald-700 font-semibold border-2 border-emerald-200 hover:bg-emerald-50 transition-all duration-300"
-        >
-          <span>←</span>
-          <span>Retour</span>
-        </button>
+    <>
+      <Header />
+      <div className="min-h-screen bg-gradient-to-b from-green-50 via-white to-emerald-50 pt-24 pb-8">
+        <div className="max-w-7xl mx-auto px-4">
+          {/* Back Button */}
+          <motion.button
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            onClick={() => router.back()}
+            className="mb-6 flex items-center gap-2 px-5 py-3 rounded-xl bg-white text-green-700 font-bold border-2 border-green-200 hover:bg-green-50 hover:scale-105 transition-all duration-300 shadow-md"
+          >
+            <span className="text-xl">←</span>
+            <span>Retour</span>
+          </motion.button>
 
-        {/* Image Gallery */}
-        <div className="rounded-2xl overflow-hidden shadow-xl mb-8 h-96 bg-gradient-to-br from-emerald-200 to-teal-200 flex items-center justify-center">
-          {land.images && land.images.length > 0 ? (
-            <Image
-              src={land.images[0]?.startsWith('http') ? land.images[0] : `${API_BASE_URL}${land.images[0]}`}
-              alt={land.title}
-              width={800}
-              height={400}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="text-6xl">🌾</div>
-          )}
-        </div>
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Left Column - Images & Details */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Image Gallery */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-xl overflow-hidden shadow-lg"
+              >
+                {land.images && land.images.length > 0 ? (
+                  <Swiper
+                    modules={[Navigation, Pagination, Autoplay]}
+                    navigation
+                    pagination={{ clickable: true }}
+                    autoplay={{ delay: 5000 }}
+                    className="h-80 md:h-96"
+                  >
+                    {land.images.map((img, idx) => (
+                      <SwiperSlide key={idx}>
+                        <div className="relative w-full h-full">
+                          <Image
+                            src={img?.startsWith('http') ? img : `${API_BASE_URL}${img}`}
+                            alt={`${land.title} - Image ${idx + 1}`}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      </SwiperSlide>
+                    ))}
+                  </Swiper>
+                ) : (
+                  <div className="h-80 bg-slate-100 flex items-center justify-center">
+                    <div className="text-7xl">🌾</div>
+                  </div>
+                )}
+              </motion.div>
 
-        <div className="grid grid-cols-3 gap-6 mb-8">
-          {/* Main Content */}
-          <div className="col-span-2">
-            {/* Header */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg mb-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-900 via-green-800 to-teal-900 bg-clip-text text-transparent mb-2">
-                    {land.title}
-                  </h1>
-                  <p className="text-lg text-emerald-700 font-medium">📍 {land.location}</p>
+              {/* Title & Description */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white rounded-xl p-6 shadow-lg"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">
+                      {land.title}
+                    </h1>
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                      <span>📍</span>
+                      <span className="font-medium">{land.location}</span>
+                    </div>
+                  </div>
+                  <div className={`px-4 py-2 rounded-lg font-semibold text-sm ${
+                      land.status === 'available' ? 'bg-emerald-100 text-emerald-700' : 
+                      land.status === 'reserved' ? 'bg-amber-100 text-amber-700' :
+                      'bg-slate-100 text-slate-700'
+                    }`}
+                  >
+                    {land.status === 'available' ? '✓ Disponible' : 
+                     land.status === 'reserved' ? '⏳ Réservé' : '✗ Indisponible'}
+                  </div>
                 </div>
-                <div className={`px-4 py-2 rounded-full font-semibold text-white ${
-                  land.status === 'available' ? 'bg-emerald-500' : 
-                  land.status === 'reserved' ? 'bg-amber-500' :
-                  'bg-gray-500'
-                }`}>
-                  {land.status === 'available' ? 'Disponible' : 
-                   land.status === 'reserved' ? 'Réservé' : 'Indisponible'}
+                
+                <p className="text-slate-600 leading-relaxed">{land.description}</p>
+              </motion.div>
+
+              {/* Key Metrics Grid */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="grid grid-cols-2 md:grid-cols-4 gap-3"
+              >
+                {[
+                  { icon: '🏞️', label: 'Surface', value: `${areaHectares} ha`, color: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
+                  { icon: '💰', label: 'Prix/Mois', value: `${leasePrice.toLocaleString()} TND`, color: 'bg-blue-50 border-blue-200 text-blue-700' },
+                  { icon: '📅', label: 'Durée Min', value: `${minMonths} mois`, color: 'bg-purple-50 border-purple-200 text-purple-700' },
+                  { icon: '⏱️', label: 'Durée Max', value: `${maxMonths} mois`, color: 'bg-orange-50 border-orange-200 text-orange-700' }
+                ].map((metric, idx) => (
+                  <div
+                    key={idx}
+                    className={`${metric.color} border rounded-lg p-4`}
+                  >
+                    <div className="text-2xl mb-1">{metric.icon}</div>
+                    <p className="text-xs opacity-80 mb-1">{metric.label}</p>
+                    <p className="text-lg font-bold">{metric.value}</p>
+                  </div>
+                ))}
+              </motion.div>
+
+              {/* Availability Section */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-white rounded-xl p-6 shadow-lg"
+              >
+                <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <span>📅</span>
+                  <span>Disponibilité</span>
+                </h2>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <p className="text-xs text-slate-600 mb-1.5 font-medium">Date de Début</p>
+                    <p className="text-base font-bold text-slate-900">
+                      {land.availableFrom ? new Date(land.availableFrom).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Non spécifié'}
+                    </p>
+                  </div>
+                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <p className="text-xs text-slate-600 mb-1.5 font-medium">Date de Fin</p>
+                    <p className="text-base font-bold text-slate-900">
+                      {land.fundingDeadline ? new Date(land.fundingDeadline).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Non spécifié'}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <p className="text-gray-700 leading-relaxed">{land.description}</p>
+              </motion.div>
             </div>
 
-            {/* Key Metrics */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-white rounded-2xl p-6 shadow-lg">
-                <p className="text-gray-600 text-sm font-medium mb-1">Surface</p>
-                <p className="text-3xl font-bold text-emerald-700">{areaHectares} ha</p>
-              </div>
-              <div className="bg-white rounded-2xl p-6 shadow-lg">
-                <p className="text-gray-600 text-sm font-medium mb-1">Prix Mensuel</p>
-                <p className="text-3xl font-bold text-emerald-700">{leasePrice} TND</p>
-              </div>
-              <div className="bg-white rounded-2xl p-6 shadow-lg">
-                <p className="text-gray-600 text-sm font-medium mb-1">Durée Min</p>
-                <p className="text-3xl font-bold text-emerald-700">{minMonths} mois</p>
-              </div>
-              <div className="bg-white rounded-2xl p-6 shadow-lg">
-                <p className="text-gray-600 text-sm font-medium mb-1">Durée Max</p>
-                <p className="text-3xl font-bold text-emerald-700">{maxMonths} mois</p>
-              </div>
-            </div>
-
-            {/* Characteristics */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg mb-6">
-              <h2 className="text-2xl font-bold mb-6 text-emerald-900">Caractéristiques 🌱</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-200">
-                  <p className="text-emerald-700 font-semibold">💧 Accès à l'eau</p>
-                  <p className="text-gray-600">Irrigation disponible</p>
-                </div>
-                <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-200">
-                  <p className="text-emerald-700 font-semibold">🌾 Type de sol</p>
-                  <p className="text-gray-600">Fertile et bien drainé</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Availability */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg">
-              <h2 className="text-2xl font-bold mb-4 text-emerald-900">Disponibilité 📅</h2>
-              <p className="text-lg text-gray-700">
-                <span className="font-semibold">Du</span> {land.availableFrom ? new Date(land.availableFrom).toLocaleDateString('fr-FR') : 'N/A'} 
-                <span className="font-semibold ml-4">Au</span> {land.fundingDeadline ? new Date(land.fundingDeadline).toLocaleDateString('fr-FR') : 'N/A'}
-              </p>
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="col-span-1">
-            {/* Lease Form */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg sticky top-24 mb-6">
-              <h3 className="text-xl font-bold mb-6 text-emerald-900">Demander une Location 🚜</h3>
-              
-              {land.status !== 'available' && (
-                <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p className="text-amber-700 font-medium">
-                    {land.status === 'reserved' ? '⏳ Cette terre est réservée' : '✓ Cette terre est louée'}
-                  </p>
-                </div>
-              )}
-
-              {currentUserId === land.owner.id && (
-                <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
-                  <p className="text-emerald-800 font-medium">
-                    C'est votre annonce. Les autres utilisateurs peuvent demander une location ici.
-                  </p>
-                </div>
-              )}
-              
-              {currentUserId !== land.owner.id && land.status !== 'available' && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-700 font-medium">
-                    Cette terre n'est pas disponible pour le moment.
-                  </p>
-                </div>
-              )}
-
-              {currentUserId !== land.owner.id && land.status === 'available' && (
-              <form onSubmit={handleLeaseSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Date de Début
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={leaseForm.seasonStartDate}
-                    onChange={(e) => setLeaseForm({ ...leaseForm, seasonStartDate: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg border border-emerald-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Durée (mois)
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min={minMonths}
-                    max={maxMonths}
-                    value={leaseForm.customDurationMonths}
-                    onChange={(e) => setLeaseForm({ ...leaseForm, customDurationMonths: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg border border-emerald-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Plan d'Exploitation
-                  </label>
-                  <textarea
-                    value={leaseForm.farmingPlan}
-                    onChange={(e) => setLeaseForm({ ...leaseForm, farmingPlan: e.target.value })}
-                    placeholder="Décrivez votre plan..."
-                    className="w-full px-4 py-2 rounded-lg border border-emerald-300 focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
-                    rows={4}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={land.status !== 'available'}
-                  className="w-full py-3 bg-gradient-to-r from-emerald-600 to-green-600 text-white font-semibold rounded-lg hover:from-emerald-700 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            {/* Right Column - Sticky Sidebar */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-24 space-y-6">
+                {/* Lease Request Card */}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="bg-white rounded-xl p-6 shadow-lg border border-slate-200"
                 >
-                  {land.status === 'available' ? 'Demander une Location' : 'Non disponible'}
-                </button>
-              </form>
-              )}
-            </div>
+                  <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <span>🚜</span>
+                    <span>Location</span>
+                  </h3>
 
-            {/* Owner Info */}
-            <div className="bg-gradient-to-br from-emerald-600 to-green-600 rounded-2xl p-8 shadow-lg text-white">
-              <h4 className="text-lg font-bold mb-4">Propriétaire 👨‍🌾</h4>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center font-bold text-emerald-600">
-                  {land.owner.name.charAt(0)}
-                </div>
-                <div>
-                  <p className="font-semibold">{land.owner.name}</p>
-                  <p className="text-emerald-100 text-sm">{land.owner.email}</p>
-                </div>
+                  {currentUserId === land.owner.id ? (
+                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                      <p className="text-emerald-700 font-medium text-sm flex items-center gap-2">
+                        <span>👤</span>
+                        <span>C'est votre annonce</span>
+                      </p>
+                    </div>
+                  ) : land.status !== 'available' ? (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-amber-700 font-medium text-sm flex items-center gap-2">
+                        <span>⏳</span>
+                        <span>Terre non disponible</span>
+                      </p>
+                    </div>
+                  ) : !showLeaseForm ? (
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowLeaseForm(true)}
+                      className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all"
+                    >
+                      Demander une Location
+                    </motion.button>
+                  ) : (
+                    <motion.form
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      onSubmit={handleLeaseSubmit}
+                      className="space-y-4"
+                    >
+                      <div>
+                        <label className="block text-sm font-bold text-gray-800 mb-2">
+                          Date de Début
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={leaseForm.seasonStartDate}
+                          onChange={(e) => setLeaseForm({ ...leaseForm, seasonStartDate: e.target.value })}
+                          className="w-full px-4 py-3 rounded-xl border-2 border-green-200 focus:ring-4 focus:ring-green-200 focus:border-green-500 outline-none transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold text-gray-800 mb-2">
+                          Durée (mois)
+                        </label>
+                        <input
+                          type="number"
+                          required
+                          min={minMonths}
+                          max={maxMonths}
+                          value={leaseForm.customDurationMonths}
+                          onChange={(e) => setLeaseForm({ ...leaseForm, customDurationMonths: e.target.value })}
+                          placeholder={`Entre ${minMonths} et ${maxMonths} mois`}
+                          className="w-full px-4 py-3 rounded-xl border-2 border-green-200 focus:ring-4 focus:ring-green-200 focus:border-green-500 outline-none transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold text-gray-800 mb-2">
+                          Plan d'Exploitation
+                        </label>
+                        <textarea
+                          value={leaseForm.farmingPlan}
+                          onChange={(e) => setLeaseForm({ ...leaseForm, farmingPlan: e.target.value })}
+                          placeholder="Décrivez votre plan de culture..."
+                          className="w-full px-4 py-3 rounded-xl border-2 border-green-200 focus:ring-4 focus:ring-green-200 focus:border-green-500 outline-none transition-all resize-none"
+                          rows={4}
+                        />
+                      </div>
+
+                      <div className="flex gap-3">
+                        <button
+                          type="submit"
+                          className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-xl hover:shadow-xl transition-all"
+                        >
+                          Envoyer
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowLeaseForm(false)}
+                          className="px-6 py-3 border-2 border-gray-300 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-all"
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    </motion.form>
+                  )}
+                </motion.div>
+
+                {/* Owner Card */}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="bg-gradient-to-br from-green-600 to-emerald-700 rounded-3xl p-8 shadow-2xl text-white"
+                >
+                  <h4 className="text-xl font-bold mb-6 flex items-center gap-2">
+                    <span>👨‍🌾</span>
+                    <span>Propriétaire</span>
+                  </h4>
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="relative">
+                      <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center font-bold text-2xl text-green-600 shadow-xl">
+                        {land.owner.name.charAt(0)}
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white"></div>
+                    </div>
+                    <div>
+                      <p className="font-bold text-lg">{land.owner.name}</p>
+                      <p className="text-green-100 text-sm">{land.owner.email}</p>
+                    </div>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-full py-3 bg-white text-green-700 font-bold rounded-xl hover:bg-green-50 transition-all shadow-lg"
+                  >
+                    Contacter le Propriétaire
+                  </motion.button>
+                </motion.div>
               </div>
-              <button className="w-full py-2 bg-white text-emerald-600 font-semibold rounded-lg hover:bg-emerald-50 transition">
-                Contacter
-              </button>
             </div>
           </div>
         </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 }

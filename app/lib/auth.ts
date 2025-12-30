@@ -18,7 +18,8 @@ export function isValidJwt(token: string | undefined): boolean {
   }
 }
 
-export function requireAuth(nextPath: string) {
-  const token = cookies().get('gc_token')?.value;
+export async function requireAuth(nextPath: string) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('gc_token')?.value;
   return isValidJwt(token);
 }

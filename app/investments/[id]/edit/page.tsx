@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // app/investments/[id]/edit/page.tsx
 'use client';
@@ -190,7 +191,7 @@ export default function EditListingPage() {
         return (
             <>
                 <Header />
-                <main className="max-w-7xl mx-auto px-4 py-12">
+                <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
                     <p className="text-center text-gray-800">Chargement...</p>
                 </main>
                 <Footer />
@@ -202,7 +203,7 @@ export default function EditListingPage() {
         return (
             <>
                 <Header />
-                <main className="max-w-7xl mx-auto px-4 py-12">
+                <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
                     <p className="text-center text-gray-800">Chargement...</p>
                 </main>
                 <Footer />
@@ -213,19 +214,24 @@ export default function EditListingPage() {
     return (
         <>
             <Header />
-            <main className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 px-4 py-12">
+            <main className="min-h-screen bg-slate-50 px-4 pt-24 pb-12">
                 <div className="max-w-4xl mx-auto">
+                    {/* Back Button */}
+                    <button
+                        onClick={() => router.back()}
+                        className="mb-6 flex items-center gap-2 px-5 py-3 rounded-xl bg-white text-green-700 font-bold border-2 border-green-200 hover:bg-green-50 hover:scale-105 transition-all duration-300 shadow-md"
+                    >
+                        <span className="text-xl">←</span>
+                        <span>Retour</span>
+                    </button>
+
                     {/* Header */}
-                    <div className="mb-10 text-center">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 border border-emerald-300 mb-6">
-                            <span className="text-2xl">🌾</span>
-                            <span className="text-sm font-semibold text-emerald-900">Modifier une Terre</span>
-                        </div>
-                        <h1 className="text-5xl font-bold bg-gradient-to-r from-emerald-900 to-green-900 bg-clip-text text-transparent mb-3">
-                            Modifier Votre Annonce
+                    <div className="mb-8">
+                        <h1 className="text-3xl font-bold text-slate-900 mb-2">
+                            Modifier Votre Terre
                         </h1>
-                        <p className="text-gray-700 max-w-2xl mx-auto">
-                            Mettez à jour les informations de votre terre
+                        <p className="text-slate-600">
+                            Mettez à jour les informations de votre annonce
                         </p>
                     </div>
 

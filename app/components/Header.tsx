@@ -121,10 +121,14 @@ const Header: React.FC = () => {
           {/* Logo/Brand */}
           <Link 
             href="/" 
-            className="flex items-center space-x-2 group"
+            className="flex items-center space-x-3 group"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-700 rounded-xl flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              <span className="text-white text-2xl font-bold">🌱</span>
+            <div className="bg-white rounded-lg p-1">
+              <img 
+                src="/images/logo-full.jpg" 
+                alt="GreenConnect" 
+                className="h-10 md:h-12 w-auto object-contain transform group-hover:scale-105 transition-transform duration-300"
+              />
             </div>
             <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">
               GreenConnect
