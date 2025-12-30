@@ -455,6 +455,32 @@ export default function CreateEquipmentPage() {
                                         </div>
                                     </div>
 
+                                    {/* Phone Number Field */}
+                                    <div className="group">
+                                        <label htmlFor="ownerPhone" className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-3">
+                                            <Phone className="w-4 h-4 text-emerald-600" />
+                                            Numéro de Téléphone <span className="text-red-500">*</span>
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="tel"
+                                                id="ownerPhone"
+                                                name="ownerPhone"
+                                                value={formData.ownerPhone}
+                                                onChange={handleChange}
+                                                required
+                                                pattern="^\+?[0-9\s-]{7,15}$"
+                                                className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 placeholder-gray-400 text-gray-900 transition-all text-lg"
+                                                placeholder="+216 20 000 000"
+                                            />
+                                            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 opacity-0 group-focus-within:opacity-10 transition-opacity pointer-events-none"></div>
+                                        </div>
+                                        <p className="mt-2 text-sm text-gray-500 flex items-center gap-1">
+                                            <Shield className="w-4 h-4 text-blue-500" />
+                                            Votre numéro sera utilisé pour être contacté par les locataires
+                                        </p>
+                                    </div>
+
                                     {/* Availability Toggle */}
                                     <div className="flex items-center justify-between p-5 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border border-emerald-200">
                                         <div className="flex items-center gap-4">

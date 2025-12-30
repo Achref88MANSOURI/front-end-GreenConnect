@@ -6,6 +6,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import ConfirmModal from '../../components/ConfirmModal';
+import { useToast } from '../../components/ToastProvider';
 import { API_BASE_URL } from '@/src/api-config';
 import { Package, Plus, Edit, Trash2, MapPin, ArrowLeft, AlertCircle, Check, X, Eye } from 'lucide-react';
 
@@ -21,10 +23,13 @@ interface Equipment {
 }
 
 export default function MyEquipmentPage() {
+    const { addToast } = useToast();
     const [equipment, setEquipment] = useState<Equipment[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [equipmentToDelete, setEquipmentToDelete] = useState<number | null>(null);
 
     useEffect(() => {
         fetchMyEquipment();
@@ -64,13 +69,18 @@ export default function MyEquipmentPage() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('Êtes-vous sûr de vouloir supprimer cet équipement ?')) return;
+        setEquipmentToDelete(id);
+        setShowDeleteModal(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!equipmentToDelete) return;
         
-        setDeletingId(id);
+        setDeletingId(equipmentToDelete);
         const token = localStorage.getItem('token');
         
         try {
-            const response = await fetch(`${API_BASE_URL}/equipment/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/equipment/${equipmentToDelete}`, {
                 method: 'DELETE',
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -81,9 +91,9 @@ export default function MyEquipmentPage() {
                 throw new Error('Erreur lors de la suppression');
             }
             
-            setEquipment(equipment.filter(eq => eq.id !== id));
+            setEquipment(equipment.filter(eq => eq.id !== equipmentToDelete));
         } catch (err: any) {
-            alert(err.message || 'Erreur lors de la suppression');
+            addToast(err.message || 'Erreur lors de la suppression', 'error');
         } finally {
             setDeletingId(null);
         }
@@ -267,6 +277,21 @@ export default function MyEquipmentPage() {
                 </div>
             </main>
             <Footer />
+
+            {/* Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showDeleteModal}
+                onClose={() => {
+                    setShowDeleteModal(false);
+                    setEquipmentToDelete(null);
+                }}
+                onConfirm={confirmDelete}
+                title="Supprimer l'équipement"
+                message="Êtes-vous sûr de vouloir supprimer cet équipement ? Cette action est irréversible."
+                confirmText="Supprimer"
+                cancelText="Annuler"
+                isDangerous={true}
+            />
         </>
     );
 }

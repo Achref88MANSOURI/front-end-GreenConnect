@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 // app/components/Footer.tsx
 
 import Link from 'next/link';

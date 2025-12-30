@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 // components/TestimonialCard.tsx
 import React from 'react';
 

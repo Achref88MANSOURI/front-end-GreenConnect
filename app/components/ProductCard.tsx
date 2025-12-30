@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { MapPin, User, Calendar, ArrowRight, ShoppingBag, Heart, Eye, Sparkles } from 'lucide-react';

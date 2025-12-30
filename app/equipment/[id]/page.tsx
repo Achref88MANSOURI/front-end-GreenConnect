@@ -7,6 +7,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import ConfirmModal from '../../components/ConfirmModal';
+import { useToast } from '../../components/ToastProvider';
 import { API_BASE_URL } from '@/src/api-config';
 import { 
     ArrowLeft, MapPin, Tag, Calendar, Star, Shield, Clock, CheckCircle, 
@@ -35,6 +37,7 @@ interface Equipment {
 export default function EquipmentDetailPage() {
     const params = useParams();
     const router = useRouter();
+    const { addToast } = useToast();
     const id = params.id as string;
 
     const [equipment, setEquipment] = useState<Equipment | null>(null);
@@ -45,6 +48,7 @@ export default function EquipmentDetailPage() {
     const [isFavorite, setIsFavorite] = useState(false);
     const [currentUserId, setCurrentUserId] = useState<number | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     useEffect(() => {
         // Get current user ID from localStorage
@@ -424,22 +428,7 @@ export default function EquipmentDetailPage() {
                                                 </Link>
                                                 
                                                 <button
-                                                    onClick={async () => {
-                                                        if (!confirm('Êtes-vous sûr de vouloir supprimer cet équipement ?')) return;
-                                                        setDeleting(true);
-                                                        const token = localStorage.getItem('token');
-                                                        try {
-                                                            const res = await fetch(`${API_BASE_URL}/equipment/${equipment.id}`, {
-                                                                method: 'DELETE',
-                                                                headers: { Authorization: `Bearer ${token}` },
-                                                            });
-                                                            if (!res.ok) throw new Error('Erreur lors de la suppression');
-                                                            router.push('/equipment/browse');
-                                                        } catch (err) {
-                                                            alert('Erreur lors de la suppression');
-                                                            setDeleting(false);
-                                                        }
-                                                    }}
+                                                    onClick={() => setShowDeleteModal(true)}
                                                     disabled={deleting}
                                                     className="w-full py-3 px-6 bg-red-100 border-2 border-red-200 rounded-xl font-semibold text-red-700 hover:bg-red-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                                                 >
@@ -601,6 +590,32 @@ export default function EquipmentDetailPage() {
                 }
                 .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
             `}</style>
+
+            {/* Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={async () => {
+                    setDeleting(true);
+                    const token = localStorage.getItem('token');
+                    try {
+                        const res = await fetch(`${API_BASE_URL}/equipment/${equipment.id}`, {
+                            method: 'DELETE',
+                            headers: { Authorization: `Bearer ${token}` },
+                        });
+                        if (!res.ok) throw new Error('Erreur lors de la suppression');
+                        router.push('/equipment/browse');
+                    } catch (err) {
+                        addToast('Erreur lors de la suppression', 'error');
+                        setDeleting(false);
+                    }
+                }}
+                title="Supprimer l'équipement"
+                message="Êtes-vous sûr de vouloir supprimer cet équipement ? Cette action est irréversible."
+                confirmText="Supprimer"
+                cancelText="Annuler"
+                isDangerous={true}
+            />
         </>
     );
 }
