@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { API_BASE_URL } from '../../../src/api-config';
 import { ArrowLeft, Package, DollarSign, Phone, User, MapPin, FileText, ImagePlus, Upload, Sparkles, CheckCircle2, Leaf, ShieldCheck } from 'lucide-react';
+import { useToast } from '../../components/ToastProvider';
 
 export default function CreateProductPage() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function CreateProductPage() {
     image: null as File | null,
   });
   const [currentUserName, setCurrentUserName] = useState<string>('');
+  const { addToast } = useToast();
 
   // On mount, derive vendeur from stored user info
   useEffect(() => {
@@ -81,15 +83,15 @@ export default function CreateProductPage() {
         ? (localStorage.getItem('token') || localStorage.getItem('access_token'))
         : null;
       if (!token) {
-        throw new Error('You must be logged in to create a product.');
+        throw new Error('Vous devez être connecté pour créer un produit.');
       }
       // Basic client-side validation aligned with backend DTO
       const phoneRegex = /^\+?[0-9\s-]{7,15}$/;
       if (!phoneRegex.test(formData.phoneNumber)) {
-        throw new Error('Invalid phone number format. Use e.g., +216 20 000 000');
+        throw new Error('Format de téléphone invalide. Exemple: +216 20 000 000');
       }
       if (!formData.location) {
-        throw new Error('Location is required');
+        throw new Error('La localisation est requise');
       }
 
       const data = new FormData();
@@ -123,16 +125,16 @@ export default function CreateProductPage() {
       const result = await response.json();
       console.log('Product created:', result);
 
-      alert('Product uploaded successfully!');
+      addToast('Produit ajouté avec succès', 'success');
       router.push('/marketplace');
     } catch (error) {
       console.error('Error creating product:', error);
       const msg = String(error);
       if (msg.includes('401')) {
-        alert('Unauthorized. Please login again.');
+        addToast('Session expirée. Merci de vous reconnecter.', 'error');
         router.push('/login');
       } else {
-        alert(msg);
+        addToast(msg, 'error');
       }
     } finally {
       setIsLoading(false);

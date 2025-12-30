@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { useToast } from '../components/ToastProvider';
 import { API_BASE_URL } from '../../src/api-config';
 import { 
   Package, Truck, Calendar, MapPin, ArrowRight, 
@@ -53,6 +54,8 @@ function DeliveriesContent() {
   const [loadingRequests, setLoadingRequests] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [confirmingId, setConfirmingId] = useState<number | null>(null);
+  const { addToast } = useToast();
 
   // Update tab when URL param changes
   useEffect(() => {
@@ -130,7 +133,12 @@ function DeliveriesContent() {
   };
 
   const handleCancel = async (deliveryId: number) => {
-    if (!confirm('Voulez-vous vraiment annuler cette réservation?')) return;
+    if (confirmingId !== deliveryId) {
+      setConfirmingId(deliveryId);
+      addToast('Cliquez encore pour annuler cette réservation', 'info');
+      setTimeout(() => setConfirmingId(prev => (prev === deliveryId ? null : prev)), 2500);
+      return;
+    }
     setActionLoading(deliveryId);
     try {
       const token = localStorage.getItem('token');
@@ -140,10 +148,13 @@ function DeliveriesContent() {
       });
       if (!res.ok) throw new Error('Échec');
       setMyBookings(prev => prev.filter(d => d.id !== deliveryId));
+      addToast('Réservation annulée avec succès', 'success');
     } catch (err) {
       setError('Échec de l\'annulation');
+      addToast('Échec de l\'annulation', 'error');
     }
     setActionLoading(null);
+    setConfirmingId(null);
   };
 
   const getStatusBadge = (status: string) => {

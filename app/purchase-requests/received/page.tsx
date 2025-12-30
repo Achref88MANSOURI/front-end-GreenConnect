@@ -5,8 +5,9 @@ import Link from 'next/link';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { API_BASE_URL } from '../../../src/api-config';
-import { 
-  ShoppingBag, ArrowLeft, Package, Clock, CheckCircle2, XCircle, 
+import { useToast } from '../../components/ToastProvider';
+import {
+  ShoppingBag, ArrowLeft, Package, Clock, CheckCircle2, XCircle,
   Phone, User, MapPin, MessageSquare, Loader2, AlertCircle,
   ChevronDown, ChevronUp, Check, X
 } from 'lucide-react';
@@ -41,6 +42,8 @@ export default function ReceivedRequestsPage() {
   const [requests, setRequests] = useState<PurchaseRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [confirmingId, setConfirmingId] = useState<number | null>(null);
+  const { addToast } = useToast();
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [respondingId, setRespondingId] = useState<number | null>(null);
   const [responseMessage, setResponseMessage] = useState('');
@@ -92,7 +95,7 @@ export default function ReceivedRequestsPage() {
       setResponseMessage('');
       fetchRequests();
     } catch (err: any) {
-      alert(err.message);
+      addToast(err.message, 'error');
     }
   };
 
@@ -114,7 +117,7 @@ export default function ReceivedRequestsPage() {
       setResponseMessage('');
       fetchRequests();
     } catch (err: any) {
-      alert(err.message);
+      addToast(err.message, 'error');
     }
   };
 
@@ -160,9 +163,9 @@ export default function ReceivedRequestsPage() {
       <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-50 via-white to-slate-50">
         <Header />
         <main className="flex-grow flex items-center justify-center pt-20">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="w-12 h-12 text-emerald-600 animate-spin" />
-            <p className="text-gray-600 font-medium">Chargement des demandes...</p>
+          <div className="flex flex-col items-center gap-3 text-gray-600">
+            <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
+            <p className="font-medium">Chargement des demandes...</p>
           </div>
         </main>
         <Footer />
@@ -337,9 +340,13 @@ export default function ReceivedRequestsPage() {
                             </button>
                             <button
                               onClick={() => {
-                                if (confirm('Voulez-vous refuser cette demande ?')) {
-                                  handleReject(request.id);
+                                if (confirmingId !== request.id) {
+                                  setConfirmingId(request.id);
+                                  addToast('Cliquez encore pour refuser', 'info');
+                                  setTimeout(() => setConfirmingId(null), 2500);
+                                  return;
                                 }
+                                handleReject(request.id);
                               }}
                               className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition"
                               title="Refuser"
