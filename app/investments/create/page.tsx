@@ -129,7 +129,7 @@ export default function CreateListingPage() {
         return (
             <>
                 <Header />
-                <main className="max-w-7xl mx-auto px-4 py-12">
+                <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
                     <p className="text-center text-gray-800">Chargement...</p>
                 </main>
                 <Footer />

@@ -96,7 +96,7 @@ export default function MyInvestmentsPage() {
 
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-gray-900 mb-2">Mes Locations 🚜</h1>
-            <p className="text-gray-600">Suivez vos locations de terres auprès d'autres agriculteurs</p>
+            <p className="text-gray-600">Suivez vos locations de terres auprès d&apos;autres agriculteurs</p>
           </div>
 
           {error && (
@@ -110,7 +110,7 @@ export default function MyInvestmentsPage() {
               <div className="text-5xl mb-4">🚜</div>
               <h2 className="text-xl font-semibold text-gray-900 mb-2">Aucune location active</h2>
               <p className="text-gray-600 mb-6">
-                Vous n'avez pas encore loué de terre. Explorez les terres disponibles et demandez une location!
+                Vous n&apos;avez pas encore loué de terre. Explorez les terres disponibles et demandez une location!
               </p>
               <Link
                 href="/investments"

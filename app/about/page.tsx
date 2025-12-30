@@ -9,7 +9,7 @@ export default function AboutPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-white">
+      <main className="min-h-screen bg-white pt-20">
         {/* Hero Section */}
         <section className="bg-green-700 text-white py-16 px-4 text-center">
           <div className="max-w-4xl mx-auto">

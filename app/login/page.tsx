@@ -2,13 +2,15 @@
 "use client";
 
 import Link from 'next/link';
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { API_BASE_URL } from '../../src/api-config';
 
 // Define the Login Page Component
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [redirectPath, setRedirectPath] = useState('/');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -16,6 +18,17 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Récupérer le chemin de redirection après connexion
+  useEffect(() => {
+    const nextPath = searchParams.get('next');
+    const savedPath = sessionStorage.getItem('redirectAfterLogin');
+    if (nextPath) {
+      setRedirectPath(decodeURIComponent(nextPath));
+    } else if (savedPath) {
+      setRedirectPath(savedPath);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,12 +80,15 @@ export default function LoginPage() {
         } catch {}
         // Optionally store user info if provided
         if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
+        // Clear saved redirect path
+        sessionStorage.removeItem('redirectAfterLogin');
         // Notify header/auth state
         window.dispatchEvent(new Event('storage'));
-        alert("Login successful!");
-        router.push('/');
+        alert("Connexion réussie!");
+        // Redirect to saved path or home
+        router.push(redirectPath);
       } else {
-        alert("Login failed");
+        alert("Échec de connexion");
         const msg = data?.message || `HTTP ${res.status} ${res.statusText}`;
         throw new Error(msg);
       }
@@ -90,7 +106,7 @@ export default function LoginPage() {
       <div className="pointer-events-none absolute -top-32 -left-32 h-80 w-80 rounded-full bg-green-200 blur-3xl opacity-40" />
       <div className="pointer-events-none absolute -bottom-32 -right-32 h-80 w-80 rounded-full bg-yellow-200 blur-3xl opacity-40" />
 
-      <div className="relative z-10 mx-auto max-w-6xl px-4 py-10 md:py-16">
+      <div className="relative z-10 mx-auto max-w-6xl px-4 pt-24 pb-10 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
           {/* Brand / Visual side */}
           <div className="hidden md:flex flex-col justify-between rounded-2xl p-8 bg-gradient-to-br from-green-700 to-emerald-600 text-white shadow-xl">

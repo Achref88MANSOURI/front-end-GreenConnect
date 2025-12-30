@@ -65,7 +65,7 @@ export default function FavoritesPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-10">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Mes Favoris</h1>
         {loading ? (
           <p className="text-gray-600">Chargement des favoris…</p>

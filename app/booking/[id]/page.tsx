@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { API_BASE_URL } from '../../../src/api-config';
+import { ArrowLeft, Phone } from 'lucide-react';
 
 interface Equipment {
   id: number;
@@ -26,6 +27,7 @@ export default function BookEquipmentPage() {
   const [equipment, setEquipment] = useState<Equipment | null>(null);
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+  const [phoneNumber, setPhoneNumber] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
@@ -75,6 +77,12 @@ export default function BookEquipmentPage() {
       return;
     }
 
+    if (!phoneNumber || phoneNumber.trim().length < 8) {
+      setError('Veuillez entrer un numéro de téléphone valide');
+      setLoading(false);
+      return;
+    }
+
     if (equipment && equipment.owner && currentUserId && equipment.owner.id === currentUserId) {
       setError("Vous êtes le propriétaire de cet équipement; vous ne pouvez pas le réserver");
       setLoading(false);
@@ -88,7 +96,7 @@ export default function BookEquipmentPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ startDate, endDate }),
+        body: JSON.stringify({ startDate, endDate, phoneNumber }),
       });
 
       if (!res.ok) {
@@ -107,12 +115,19 @@ export default function BookEquipmentPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl p-8">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-extrabold text-green-800">Réserver l'Équipement</h1>
-          <Link href={`/equipment/${equipmentId}`} className="text-green-600 hover:text-green-700">← Retour</Link>
-        </div>
+    <div className="min-h-screen bg-gray-50 pt-24 pb-12 px-4">
+      <div className="max-w-3xl mx-auto">
+        {/* Back to catalogue link */}
+        <Link href="/equipment/browse" className="inline-flex items-center gap-2 text-gray-600 hover:text-green-600 transition-colors mb-4">
+          <ArrowLeft className="w-4 h-4" />
+          Retour au catalogue
+        </Link>
+        
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          <div className="mb-6 flex items-center justify-between">
+            <h1 className="text-2xl font-extrabold text-green-800">Réserver l'Équipement</h1>
+            <Link href={`/equipment/${equipmentId}`} className="text-green-600 hover:text-green-700">← Détails</Link>
+          </div>
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -170,6 +185,22 @@ export default function BookEquipmentPage() {
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+              <Phone className="w-4 h-4 text-green-600" />
+              Numéro de téléphone
+            </label>
+            <input
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="Ex: 20 123 456"
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">Le propriétaire vous contactera sur ce numéro</p>
+          </div>
+
           <button
             type="submit"
             disabled={loading || !!(equipment && equipment.owner && currentUserId && equipment.owner.id === currentUserId)}
@@ -178,6 +209,7 @@ export default function BookEquipmentPage() {
             {loading ? 'Réservation…' : 'Confirmer la réservation'}
           </button>
         </form>
+        </div>
       </div>
     </div>
   );

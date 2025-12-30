@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { MapPin, Phone, User, Calendar, ArrowRight, ShoppingBag } from 'lucide-react';
+import { MapPin, User, Calendar, ArrowRight, ShoppingBag, Heart, Eye, Sparkles } from 'lucide-react';
 import type { Product } from '../data/products';
 import { API_BASE_URL } from '../../src/api-config';
 
@@ -15,8 +15,40 @@ const formatDate = (iso?: string) => {
   }
 };
 
-export default function ProductCard({ id, name, price, location, image, description, seller, createdAt, contact, userId }: Product) {
-  const addToCart = async () => {
+export default function ProductCard({ id, name, price, location, image, description, seller, createdAt, contact, userId, isOwner }: Product & { isOwner?: boolean }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const favs = localStorage.getItem('favorites');
+    return favs ? JSON.parse(favs).includes(id) : false;
+  });
+  const [isAdding, setIsAdding] = useState(false);
+
+  const toggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const favRaw = localStorage.getItem('favorites');
+      const favs: number[] = favRaw ? JSON.parse(favRaw) : [];
+      const idx = favs.indexOf(id);
+      if (idx >= 0) {
+        favs.splice(idx, 1);
+        setIsFavorite(false);
+      } else {
+        favs.push(id);
+        setIsFavorite(true);
+      }
+      localStorage.setItem('favorites', JSON.stringify(favs));
+    } catch (e) {
+      console.error('Favorite toggle error', e);
+    }
+  };
+
+  const addToCart = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsAdding(true);
+    
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     
     if (token) {
@@ -30,7 +62,7 @@ export default function ProductCard({ id, name, price, location, image, descript
           body: JSON.stringify({ productId: id, quantity: 1 })
         });
         if (res.ok) {
-          alert('Produit ajouté au panier');
+          setTimeout(() => setIsAdding(false), 500);
           return;
         }
       } catch (e) {
@@ -51,92 +83,169 @@ export default function ProductCard({ id, name, price, location, image, descript
       }
       localStorage.setItem('cart', JSON.stringify(cart));
       window.dispatchEvent(new Event('storage'));
-      alert('Produit ajouté au panier');
     } catch (e) {
       console.error('Failed to add to cart', e);
-      alert('Impossible d\'ajouter au panier');
     }
+    
+    setTimeout(() => setIsAdding(false), 500);
   };
 
   return (
-    <article className="group bg-white rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden border border-gray-100 flex flex-col h-full">
+    <article 
+      className="group relative bg-white rounded-3xl overflow-hidden border border-gray-100 flex flex-col h-full transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-500/10 hover:-translate-y-2"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* Image Container */}
-      <div className="relative h-56 overflow-hidden bg-gray-100">
+      <div className="relative h-56 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50">
         {image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img 
-            src={image} 
-            alt={name} 
-            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" 
-          />
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src={image} 
+              alt={name} 
+              className={`w-full h-full object-cover transition-all duration-700 ${
+                isHovered ? 'scale-110 brightness-105' : 'scale-100 brightness-100'
+              }`}
+            />
+            {/* Gradient overlay on hover */}
+            <div className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity duration-300 ${
+              isHovered ? 'opacity-100' : 'opacity-0'
+            }`} />
+          </>
         ) : (
-          <div className="h-full w-full flex items-center justify-center text-gray-400 bg-gray-50">
+          <div className="h-full w-full flex flex-col items-center justify-center text-gray-400 bg-gradient-to-br from-gray-50 to-gray-100">
+            <Sparkles className="w-10 h-10 mb-2 opacity-50" />
             <span className="text-sm font-medium">Image non disponible</span>
           </div>
         )}
-        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-emerald-700 shadow-sm">
-          {price}
+        
+        {/* Price Badge */}
+        <div className="absolute top-4 left-4 px-4 py-2 bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg">
+          <span className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+            {price}
+          </span>
         </div>
+
+        {/* Owner Badge */}
+        {isOwner && (
+          <div className="absolute top-16 left-4 px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded-full shadow-lg">
+            Mon Produit
+          </div>
+        )}
+
+        {/* Favorite Button */}
+        <button
+          onClick={toggleFavorite}
+          className={`absolute top-4 right-4 p-3 rounded-2xl transition-all duration-300 ${
+            isFavorite 
+              ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' 
+              : 'bg-white/90 backdrop-blur-sm text-gray-600 hover:bg-white hover:text-rose-500 shadow-lg'
+          }`}
+        >
+          <Heart className={`w-5 h-5 transition-transform ${isFavorite ? 'fill-current scale-110' : ''}`} />
+        </button>
+
+        {/* Quick View Button - appears on hover */}
+        <Link
+          href={`/products/${id}`}
+          className={`absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-5 py-2.5 bg-white/95 backdrop-blur-sm rounded-full text-gray-900 font-medium shadow-lg transition-all duration-300 ${
+            isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+        >
+          <Eye className="w-4 h-4" />
+          Aperçu rapide
+        </Link>
       </div>
 
       {/* Content */}
       <div className="p-5 flex flex-col flex-grow">
-        <div className="flex items-start justify-between mb-2">
-          <h3 className="text-lg font-bold text-gray-900 line-clamp-1 group-hover:text-emerald-600 transition-colors">
-            {name}
-          </h3>
-        </div>
+        {/* Title */}
+        <h3 className="text-lg font-bold text-gray-900 line-clamp-1 group-hover:text-emerald-600 transition-colors duration-300 mb-2">
+          {name}
+        </h3>
 
-        <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
-          <div className="flex items-center gap-1">
-            <MapPin className="w-3 h-3" />
-            <span className="line-clamp-1">{location}</span>
+        {/* Meta Info */}
+        <div className="flex items-center gap-3 text-xs text-gray-500 mb-3">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 rounded-full">
+            <MapPin className="w-3 h-3 text-emerald-500" />
+            <span className="line-clamp-1 font-medium">{location}</span>
           </div>
           {createdAt && (
-            <div className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              <span>{formatDate(createdAt)}</span>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 rounded-full">
+              <Calendar className="w-3 h-3 text-blue-500" />
+              <span className="font-medium">{formatDate(createdAt)}</span>
             </div>
           )}
         </div>
 
-        <p className="text-sm text-gray-600 line-clamp-2 mb-4 flex-grow">
+        {/* Description */}
+        <p className="text-sm text-gray-600 line-clamp-2 mb-4 flex-grow leading-relaxed">
           {truncate(description, 100)}
         </p>
 
-        <div className="pt-4 border-t border-gray-50 mt-auto space-y-3">
-          {/* Seller Info */}
-          <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-1.5 text-gray-600">
-              <User className="w-3.5 h-3.5 text-gray-400" />
-              <span className="font-medium text-gray-900">{seller}</span>
+        {/* Seller Info */}
+        <div className="pt-4 border-t border-gray-100 mt-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-emerald-500/20">
+                {seller?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              <div>
+                <span className="text-sm font-semibold text-gray-900">{seller}</span>
+                {userId && (
+                  <Link 
+                    href={`/users/${userId}`} 
+                    className="block text-xs text-emerald-600 hover:text-emerald-700 font-medium hover:underline"
+                  >
+                    Voir profil
+                  </Link>
+                )}
+              </div>
             </div>
-            {userId && (
-              <Link href={`/users/${userId}`} className="text-emerald-600 hover:text-emerald-700 font-medium hover:underline">
-                Voir profil
-              </Link>
-            )}
           </div>
 
           {/* Actions */}
           <div className="grid grid-cols-2 gap-2">
             <Link 
               href={`/products/${id}`} 
-              className="flex items-center justify-center gap-2 py-2.5 px-4 bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-colors text-sm font-medium group/btn"
+              className="flex items-center justify-center gap-2 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 text-sm font-semibold group/btn"
             >
               Détails
-              <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform" />
+              <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
             </Link>
             <button 
-              onClick={addToCart} 
-              className="flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors text-sm font-medium shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30"
+              onClick={addToCart}
+              disabled={isAdding}
+              className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                isAdding
+                  ? 'bg-emerald-100 text-emerald-600'
+                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40'
+              }`}
             >
-              <ShoppingBag className="w-4 h-4" />
-              Ajouter
+              {isAdding ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Ajouté!
+                </>
+              ) : (
+                <>
+                  <ShoppingBag className="w-4 h-4" />
+                  Ajouter
+                </>
+              )}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Subtle border glow effect on hover */}
+      <div className={`absolute inset-0 rounded-3xl border-2 transition-all duration-500 pointer-events-none ${
+        isHovered ? 'border-emerald-500/30' : 'border-transparent'
+      }`} />
     </article>
   );
 }
