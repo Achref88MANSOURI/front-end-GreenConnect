@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
+import { useToast } from '../../../components/ToastProvider';
 import { API_BASE_URL } from '@/src/api-config';
 import { Inbox, ArrowLeft, AlertCircle, Check, X, Clock, Calendar, User, MapPin, CheckCircle, XCircle, Loader2, Phone, ExternalLink } from 'lucide-react';
 
@@ -32,6 +33,7 @@ interface Booking {
 }
 
 export default function ReceivedBookingsPage() {
+    const { addToast } = useToast();
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -98,7 +100,7 @@ export default function ReceivedBookingsPage() {
                 ));
             }
         } catch (err: any) {
-            alert(err.message || 'Erreur lors de la mise à jour');
+            addToast(err.message || 'Erreur lors de la mise à jour', 'error');
         } finally {
             setProcessingId(null);
         }

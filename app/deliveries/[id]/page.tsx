@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { API_BASE_URL } from '../../../src/api-config';
+import { useToast } from '../../components/ToastProvider';
 
 interface Delivery {
   [x: string]: any;
@@ -28,6 +29,7 @@ interface Delivery {
 }
 
 export default function TrackDeliveryPage() {
+  const { addToast } = useToast();
   const params = useParams();
   const router = useRouter();
   const deliveryId = params.id as string;
@@ -80,12 +82,12 @@ export default function TrackDeliveryPage() {
         throw new Error('Erreur lors de la soumission de l\'évaluation');
       }
 
-      alert('Merci pour votre évaluation !');
+      addToast('Merci pour votre évaluation !', 'success');
       // Refresh delivery data
       const updatedDelivery = await res.json();
       setDelivery(updatedDelivery);
     } catch (err: any) {
-      alert(err.message);
+      addToast(err.message, 'error');
     } finally {
       setSubmittingReview(false);
     }

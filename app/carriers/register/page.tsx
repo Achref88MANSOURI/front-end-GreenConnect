@@ -6,9 +6,11 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { API_BASE_URL } from '../../../src/api-config';
+import { useToast } from '../../components/ToastProvider';
 
 export default function RegisterCarrierPage() {
   const router = useRouter();
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -70,7 +72,7 @@ export default function RegisterCarrierPage() {
         throw new Error(errData.message || 'Erreur lors de l\'inscription');
       }
 
-      alert('Inscription réussie ! Vous êtes maintenant transporteur.');
+      addToast('Inscription réussie ! Vous êtes maintenant transporteur.', 'success');
       router.push('/carriers');
     } catch (err: any) {
       setError(err.message);
