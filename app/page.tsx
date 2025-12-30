@@ -1,4 +1,5 @@
-﻿'use client'; // Obligatoire pour les animations
+﻿/* eslint-disable react-hooks/purity */
+'use client'; // Obligatoire pour les animations
 
 /* eslint-disable react/no-unescaped-entities */
 import React, { useState, useEffect } from 'react';
@@ -227,14 +228,7 @@ export default function HomePage() {
               </button>
             </Link>
 
-            <button className="group relative px-10 py-5 bg-white/10 backdrop-blur-xl text-white font-bold text-lg rounded-2xl border-2 border-white/40 hover:bg-white/20 hover:border-white/60 transition-all duration-300 hover:scale-105 shadow-2xl">
-              <span className="flex items-center gap-3">
-                <svg className="w-7 h-7 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" />
-                </svg>
-                <span>Voir la Démo</span>
-              </span>
-            </button>
+
           </motion.div>
 
           {/* Enhanced Stats Section */}

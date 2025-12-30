@@ -123,12 +123,15 @@ export default function NotificationsPage() {
     switch (type) {
       case 'RESERVATION_ACCEPTED':
       case 'PURCHASE_REQUEST_ACCEPTED':
+      case 'LEASE_APPROVED':
         return <CheckCircle className="w-6 h-6 text-green-500" />;
       case 'RESERVATION_REJECTED':
       case 'PURCHASE_REQUEST_REJECTED':
+      case 'LEASE_REJECTED':
       case 'booking_rejected':
         return <XCircle className="w-6 h-6 text-red-500" />;
       case 'NEW_RESERVATION':
+      case 'LEASE_REQUEST':
         return <Package className="w-6 h-6 text-blue-500" />;
       case 'NEW_PURCHASE_REQUEST':
         return <Package className="w-6 h-6 text-orange-500" />;
@@ -163,6 +166,14 @@ export default function NotificationsPage() {
     // Pour les demandes d'achat acceptées/refusées (acheteur), aller vers mes demandes envoyées
     if (notification.type === 'PURCHASE_REQUEST_ACCEPTED' || notification.type === 'PURCHASE_REQUEST_REJECTED') {
       return `/purchase-requests`;
+    }
+    // Pour les nouvelles demandes de location de terre (propriétaire), aller vers les réservations reçues
+    if (notification.type === 'LEASE_REQUEST') {
+      return `/investments/my-lands`;
+    }
+    // Pour les demandes de location acceptées/refusées (locataire), aller vers mes demandes de location
+    if (notification.type === 'LEASE_APPROVED' || notification.type === 'LEASE_REJECTED') {
+      return `/investments/mine`;
     }
     // Pour les autres notifications liées aux livraisons (client), aller vers mes réservations
     if (notification.relatedType === 'delivery' && notification.relatedId) {

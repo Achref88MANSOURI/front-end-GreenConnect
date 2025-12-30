@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -85,13 +86,25 @@ export default function CreateProductPage() {
       if (!token) {
         throw new Error('Vous devez être connecté pour créer un produit.');
       }
+      
+      // Validation des champs requis
+      if (!formData.title.trim()) {
+        throw new Error('Le titre est requis');
+      }
+      if (!formData.description.trim()) {
+        throw new Error('La description est requise');
+      }
+      if (!formData.price || parseFloat(formData.price) <= 0) {
+        throw new Error('Le prix doit être supérieur à 0');
+      }
+      if (!formData.location.trim()) {
+        throw new Error('La localisation est requise');
+      }
+      
       // Basic client-side validation aligned with backend DTO
       const phoneRegex = /^\+?[0-9\s-]{7,15}$/;
       if (!phoneRegex.test(formData.phoneNumber)) {
         throw new Error('Format de téléphone invalide. Exemple: +216 20 000 000');
-      }
-      if (!formData.location) {
-        throw new Error('La localisation est requise');
       }
 
       const data = new FormData();
@@ -123,7 +136,11 @@ export default function CreateProductPage() {
       }
 
       const result = await response.json();
-      console.log('Product created:', result);
+      console.log('✅ Product created successfully:', {
+        id: result.id,
+        title: result.title,
+        hasImage: !!result.imageUrl
+      });
 
       addToast('Produit ajouté avec succès', 'success');
       router.push('/marketplace');

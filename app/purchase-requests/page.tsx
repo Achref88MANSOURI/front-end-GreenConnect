@@ -6,7 +6,6 @@ import Image from 'next/image';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useToast } from '../components/ToastProvider';
-  const { addToast } = useToast();
 import { API_BASE_URL } from '../../src/api-config';
 import { 
   ShoppingBag, ArrowLeft, Package, Clock, CheckCircle2, XCircle, 
@@ -42,6 +41,7 @@ interface PurchaseRequest {
 }
 
 export default function MyPurchaseRequestsPage() {
+  const { addToast } = useToast();
   const [requests, setRequests] = useState<PurchaseRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -101,9 +101,8 @@ export default function MyPurchaseRequestsPage() {
       if (!res.ok) throw new Error('Erreur lors de la suppression');
 
       setRequests(prev => prev.filter(r => r.id !== id));
+      addToast('Demande supprimée avec succès', 'success');
     } catch (err: any) {
-      alert(err.message);
-      addToast(err.message, 'error');
       addToast(err.message, 'error');
     }
   };
@@ -134,9 +133,10 @@ export default function MyPurchaseRequestsPage() {
       if (!res.ok) throw new Error('Erreur lors de la modification');
 
       setEditingId(null);
+      addToast('Demande modifiée avec succès', 'success');
       fetchRequests();
     } catch (err: any) {
-      alert(err.message);
+      addToast(err.message, 'error');
     }
   };
 

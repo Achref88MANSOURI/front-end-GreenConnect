@@ -5,8 +5,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { API_BASE_URL } from '../../../src/api-config';
-import { ArrowLeft, Phone } from 'lucide-react';
+import { useToast } from '../../components/ToastProvider';
+import { ArrowLeft, Phone, AlertCircle } from 'lucide-react';
 
 interface Equipment {
   id: number;
@@ -21,6 +23,7 @@ interface Equipment {
 export default function BookEquipmentPage() {
   const params = useParams();
   const router = useRouter();
+  const { addToast } = useToast();
   const idParam = params?.id as string;
   const equipmentId = idParam ? parseInt(idParam, 10) : NaN;
 
@@ -100,15 +103,23 @@ export default function BookEquipmentPage() {
       });
 
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || 'Erreur lors de la réservation');
+        const data = await res.json().catch(() => ({}));
+        
+        // Gestion des erreurs spécifiques
+        if (res.status === 409 && data.message?.includes('already booked')) {
+          throw new Error('Cet équipement est déjà réservé pour ces dates. Veuillez choisir d\'autres dates.');
+        }
+        
+        throw new Error(data.message || 'Erreur lors de la réservation');
       }
 
       const booking = await res.json();
-      alert(`Réservation créée (ID ${booking.id}). Vous serez notifié une fois approuvée.`);
+      addToast(`Réservation créée (ID ${booking.id}). Vous serez notifié une fois approuvée.`, 'success');
       router.push(`/equipment/${equipmentId}`);
     } catch (err: any) {
-      setError(err.message);
+      const errorMsg = err.message || 'Erreur lors de la réservation';
+      setError(errorMsg);
+      addToast(errorMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -130,28 +141,43 @@ export default function BookEquipmentPage() {
           </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-red-800">Erreur de réservation</p>
+              <p className="text-red-700 text-sm mt-1">{error}</p>
+            </div>
           </div>
         )}
 
         {equipment ? (
           <div className="mb-6">
             <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
+              <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden flex items-center justify-center flex-shrink-0 shadow-sm">
                 {equipment.images && equipment.images[0] ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={equipment.images[0]} alt={equipment.name} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-3xl">🚜</span>
-                )}
+                  <img 
+                    src={equipment.images[0]} 
+                    alt={equipment.name} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                      (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                <div className={equipment.images && equipment.images[0] ? 'hidden' : ''}>
+                  <span className="text-4xl">🚜</span>
+                </div>
               </div>
-              <div>
+              <div className="flex-1">
                 <div className="text-lg font-bold text-gray-900">{equipment.name}</div>
-                <div className="text-sm text-gray-800">{equipment.location}</div>
-                <div className="text-sm text-green-700 font-semibold">{equipment.pricePerDay} TND / jour</div>
+                <div className="text-sm text-gray-600 mt-1">{equipment.location}</div>
+                <div className="text-base font-semibold text-green-600 mt-2">{equipment.pricePerDay} TND / jour</div>
                 {equipment.owner && (
-                  <div className="text-xs text-gray-700 mt-1">Propriétaire: {equipment.owner.name}</div>
+                  <div className="text-xs text-gray-600 mt-2">
+                    <span className="text-gray-500">Propriétaire: </span>
+                    <span className="font-medium text-gray-700">{equipment.owner.name}</span>
+                  </div>
                 )}
               </div>
             </div>
