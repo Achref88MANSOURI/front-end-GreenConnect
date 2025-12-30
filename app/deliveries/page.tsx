@@ -10,7 +10,7 @@ import { API_BASE_URL } from '../../src/api-config';
 import { 
   Package, Truck, Calendar, MapPin, ArrowRight, 
   CheckCircle, XCircle, Clock, AlertCircle, Eye,
-  Inbox, Send, Plus, Sparkles, Users, TrendingUp, Loader2
+  Inbox, Send, Plus, Sparkles, Users, TrendingUp, Loader2, Phone
 } from 'lucide-react';
 
 interface DeliveryItem {
@@ -33,6 +33,7 @@ interface DeliveryItem {
     id: number;
     name: string;
     email: string;
+    phoneNumber?: string;
   };
   createdAt?: string;
 }
@@ -510,10 +511,16 @@ function DeliveriesContent() {
                               </h4>
                               
                               {request.user && (
-                                <div className="flex items-center gap-3 mb-3 px-3 py-2 bg-blue-50 rounded-lg w-fit">
+                                <div className="flex flex-wrap items-center gap-3 mb-3 px-3 py-2 bg-blue-50 rounded-lg w-fit">
                                   <Users className="w-4 h-4 text-blue-600" />
                                   <span className="text-sm font-semibold text-blue-700">Client: {request.user.name}</span>
                                   <span className="text-sm text-blue-600">• {request.user.email}</span>
+                                  {request.user.phoneNumber && (
+                                    <span className="text-sm text-green-600 flex items-center gap-1">
+                                      <Phone className="w-3.5 h-3.5" />
+                                      {request.user.phoneNumber}
+                                    </span>
+                                  )}
                                 </div>
                               )}
                               

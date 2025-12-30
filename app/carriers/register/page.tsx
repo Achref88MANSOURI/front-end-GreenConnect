@@ -14,6 +14,7 @@ export default function RegisterCarrierPage() {
   const [formData, setFormData] = useState({
     companyName: '',
     contactEmail: '',
+    contactPhone: '',
     vehicleType: '',
     capacity_kg: '',
     pricePerKm: '',
@@ -40,6 +41,7 @@ export default function RegisterCarrierPage() {
       const payload = {
         companyName: formData.companyName,
         contactEmail: formData.contactEmail,
+        contactPhone: formData.contactPhone,
         vehicleType: formData.vehicleType,
         capacity_kg: parseInt(formData.capacity_kg),
         pricePerKm: parseFloat(formData.pricePerKm),
@@ -124,6 +126,21 @@ export default function RegisterCarrierPage() {
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-600 text-gray-900"
               placeholder="contact@transportexpress.tn"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Numéro de téléphone *
+            </label>
+            <input
+              type="tel"
+              name="contactPhone"
+              value={formData.contactPhone}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-600 text-gray-900"
+              placeholder="+216 XX XXX XXX"
             />
           </div>
 

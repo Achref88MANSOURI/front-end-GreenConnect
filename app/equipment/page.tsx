@@ -51,7 +51,7 @@ export default function EquipmentPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-green-50/30">
+      <main className="min-h-screen pt-24 bg-gradient-to-b from-slate-50 via-white to-green-50/30">
         {/* ========== ULTRA PREMIUM HERO WITH VIDEO BACKGROUND ========== */}
         <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
           {/* Video Background */}

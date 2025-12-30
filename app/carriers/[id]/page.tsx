@@ -370,12 +370,21 @@ export default function CarrierDetailPage({ params }: { params: Promise<{ id: st
                 )}
 
                 {carrier.user && (
-                  <div className="flex items-center gap-4 p-4 bg-purple-50 rounded-xl">
-                    <Users className="w-5 h-5 text-purple-600" />
-                    <div>
-                      <p className="text-sm text-gray-600">Propriétaire</p>
-                      <p className="font-semibold text-gray-900">{carrier.user.name}</p>
+                  <div className="flex items-center justify-between p-4 bg-purple-50 rounded-xl">
+                    <div className="flex items-center gap-4">
+                      <Users className="w-5 h-5 text-purple-600" />
+                      <div>
+                        <p className="text-sm text-gray-600">Propriétaire</p>
+                        <p className="font-semibold text-gray-900">{carrier.user.name}</p>
+                      </div>
                     </div>
+                    <Link
+                      href={`/users/${carrier.userId}`}
+                      className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-all text-sm"
+                    >
+                      <Users className="w-4 h-4" />
+                      Voir profil
+                    </Link>
                   </div>
                 )}
               </div>
