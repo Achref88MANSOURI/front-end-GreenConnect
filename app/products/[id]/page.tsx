@@ -37,6 +37,7 @@ export default function ProductDetailsPage({ params }: Props) {
   // NOTE: Ownership should be checked securely on the server or via token decoding
   const [isOwner, setIsOwner] = useState(false); 
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isAddedToCart, setIsAddedToCart] = useState(false);
 
   useEffect(() => {
     // Safely extract ID from params
@@ -79,15 +80,18 @@ export default function ProductDetailsPage({ params }: Props) {
           return `http://localhost:5000/uploads/${cleanPath}`;
         };
 
+        // Get seller name from vendeur field or farmer relation
+        const sellerName = item.vendeur || (item.farmer ? item.farmer.name : null);
+        
         const mapped: Product = {
           id: item.id,
           name: item.title,
           price: `${item.price} MAD`,
-          location: item.location || item.farmer?.address || 'Tunisia',
+          location: item.location || item.farmer?.address || 'Non spécifié',
           image: getImageUrl(item.imageUrl || item.image),
           description: item.description,
-          seller: item.vendeur || item.farmer?.name || undefined,
-          contact: item.phoneNumber,
+          seller: sellerName || 'Vendeur',
+          contact: item.phoneNumber || item.farmer?.phoneNumber,
           userId: item.farmerId || item.farmer?.id,
           createdAt: item.createdAt,
           // Map other fields
@@ -100,14 +104,33 @@ export default function ProductDetailsPage({ params }: Props) {
         setProduct(mapped);
         setLoading(false);
         
-        // Simple ownership check: Assume owner if a token exists for this demo
-        if (token) setIsOwner(true); 
+        // Proper ownership check: compare logged-in user ID with product owner ID
+        try {
+          const userRaw = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+          if (userRaw) {
+            const currentUser = JSON.parse(userRaw);
+            const productOwnerId = item.farmerId || item.farmer?.id;
+            setIsOwner(currentUser?.id === productOwnerId);
+          } else {
+            setIsOwner(false);
+          }
+        } catch {
+          setIsOwner(false);
+        }
 
         // Load favorite state from localStorage
         try {
           const favRaw = typeof window !== 'undefined' ? localStorage.getItem('favorites') : null;
           const favs = favRaw ? JSON.parse(favRaw) : [];
           setIsFavorite(Array.isArray(favs) && favs.includes(mapped.id));
+        } catch {}
+
+        // Check if product is already in cart
+        try {
+          const cartRaw = typeof window !== 'undefined' ? localStorage.getItem('cart') : null;
+          const cart = cartRaw ? JSON.parse(cartRaw) : [];
+          const isInCart = Array.isArray(cart) && cart.some((item: any) => item.id === mapped.id);
+          setIsAddedToCart(isInCart);
         } catch {}
       })
       .catch(e => {
@@ -118,7 +141,7 @@ export default function ProductDetailsPage({ params }: Props) {
   }, [id]);
 
   const addToCart = () => {
-    if (!product) return;
+    if (!product || isAddedToCart) return;
     try {
       const raw = localStorage.getItem('cart');
       const cart = raw ? JSON.parse(raw) : [];
@@ -132,7 +155,7 @@ export default function ProductDetailsPage({ params }: Props) {
       }
       localStorage.setItem('cart', JSON.stringify(cart));
       window.dispatchEvent(new Event('storage'));
-      alert('Produit ajouté au panier avec succès !');
+      setIsAddedToCart(true);
     } catch (e) {
       alert("Impossible d'ajouter au panier");
     }
@@ -432,19 +455,19 @@ export default function ProductDetailsPage({ params }: Props) {
                     <h2 className="text-xl font-bold text-gray-900">Détails</h2>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-[52px]">
-                    {/* Seller */}
-                    {product.seller && (
+                    {/* Seller / Owner */}
+                    {(product.seller || product.userId) && (
                       <div className="group flex items-center gap-4 p-4 bg-gradient-to-br from-white to-emerald-50/30 border border-gray-100 rounded-2xl hover:shadow-lg hover:border-emerald-200 hover:-translate-y-0.5 transition-all duration-300">
                         <div className="w-11 h-11 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200 group-hover:scale-105 transition-transform">
                           <User className="w-5 h-5 text-white" />
                         </div>
-                        <div>
-                          <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Vendeur</p>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-gray-900">{product.seller}</span>
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Propriétaire</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-gray-900">{product.seller || 'Vendeur'}</span>
                             {product.userId && (
                               <Link href={`/users/${product.userId}`} className="text-xs px-2 py-0.5 bg-emerald-100 text-emerald-600 rounded-full hover:bg-emerald-200 transition font-medium">
-                                Profil
+                                Voir profil
                               </Link>
                             )}
                           </div>
@@ -493,36 +516,37 @@ export default function ProductDetailsPage({ params }: Props) {
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="space-y-4 pt-6 border-t border-gray-100">
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <button
-                      onClick={addToCart}
-                      disabled={product.stock !== undefined && product.stock <= 0}
-                      className={`group relative flex-1 flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 overflow-hidden
-                        ${product.stock !== undefined && product.stock <= 0
-                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 text-white shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-100'
-                        }`}
-                    >
-                      <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                      <ShoppingCart className="w-5 h-5 relative z-10" />
-                      <span className="relative z-10">{product.stock !== undefined && product.stock <= 0 ? 'Stock épuisé' : 'Ajouter au panier'}</span>
-                    </button>
-                    
-                    {product.contact && (
-                      <a 
-                        href={`tel:${product.contact}`}
-                        className="flex-1 flex items-center justify-center gap-3 px-8 py-4 bg-white border-2 border-emerald-500 text-emerald-600 rounded-2xl hover:bg-emerald-50 transition-all duration-300 font-bold text-lg"
+                {/* Action Buttons - Only show for non-owners */}
+                {!isOwner && (
+                  <div className="space-y-4 pt-6 border-t border-gray-100">
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button
+                        onClick={addToCart}
+                        disabled={(product.stock !== undefined && product.stock <= 0) || isAddedToCart}
+                        className={`group relative flex-1 flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 overflow-hidden
+                          ${isAddedToCart
+                            ? 'bg-emerald-100 text-emerald-700 cursor-default border-2 border-emerald-300'
+                            : product.stock !== undefined && product.stock <= 0
+                              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                              : 'bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 text-white shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-100'
+                          }`}
                       >
-                        <Phone className="w-5 h-5" />
-                        <span>Contacter</span>
-                      </a>
-                    )}
+                        {!isAddedToCart && <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />}
+                        <ShoppingCart className="w-5 h-5 relative z-10" />
+                        <span className="relative z-10">
+                          {isAddedToCart 
+                            ? '✓ Ajouté au panier' 
+                            : product.stock !== undefined && product.stock <= 0 
+                              ? 'Stock épuisé' 
+                              : 'Ajouter au panier'}
+                        </span>
+                      </button>
+                    </div>
                   </div>
+                )}
 
-                  {/* Owner Actions */}
-                  {isOwner && (
+                {/* Owner Actions */}
+                {isOwner && (
                     <div className="pt-6 mt-4 border-t border-dashed border-gray-200 flex flex-wrap gap-3 justify-center">
                       <Link 
                         href={`/products/${product.id}/edit`}
@@ -544,8 +568,9 @@ export default function ProductDetailsPage({ params }: Props) {
               </div>
             </div>
           </div>
-        </div>
+        
       </main>
+
       <Footer />
     </div>
   );

@@ -15,7 +15,7 @@ const formatDate = (iso?: string) => {
   }
 };
 
-export default function ProductCard({ id, name, price, location, image, description, seller, createdAt, contact, userId }: Product) {
+export default function ProductCard({ id, name, price, location, image, description, seller, createdAt, contact, userId, isOwner }: Product & { isOwner?: boolean }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isFavorite, setIsFavorite] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -126,6 +126,13 @@ export default function ProductCard({ id, name, price, location, image, descript
             {price}
           </span>
         </div>
+
+        {/* Owner Badge */}
+        {isOwner && (
+          <div className="absolute top-16 left-4 px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded-full shadow-lg">
+            Mon Produit
+          </div>
+        )}
 
         {/* Favorite Button */}
         <button

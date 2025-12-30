@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { API_BASE_URL } from '../../src/api-config';
 
 const Header: React.FC = () => {
   const router = useRouter();
@@ -11,6 +12,7 @@ const Header: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Detect scroll for header styling
   useEffect(() => {
@@ -44,6 +46,31 @@ const Header: React.FC = () => {
       window.removeEventListener('storage', checkUser);
     };
   }, []);
+
+  // Fetch unread notifications count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      const token = localStorage.getItem('token');
+      if (!token || !user) return;
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/notifications/unread-count`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUnreadCount(data.count || 0);
+        }
+      } catch (err) {
+        console.error('Error fetching notifications count', err);
+      }
+    };
+
+    fetchUnreadCount();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -136,6 +163,34 @@ const Header: React.FC = () => {
           {/* Right Side - Auth & Mobile Menu */}
           <div className="flex items-center space-x-3">
             
+            {/* Notification Bell - Only show when logged in */}
+            {user && (
+              <Link
+                href="/notifications"
+                className="relative p-2 rounded-xl hover:bg-gray-100 transition-all duration-200 group"
+                title="Notifications"
+              >
+                <svg 
+                  className="w-6 h-6 text-gray-600 group-hover:text-green-600 transition-colors" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth="2" 
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" 
+                  />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Link>
+            )}
+
             {/* Desktop Auth Buttons */}
             {user ? (
               <div className="relative dropdown-container">
@@ -146,6 +201,7 @@ const Header: React.FC = () => {
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white font-bold shadow-md ring-2 ring-white">
                     {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                   </div>
+                  
                   <div className="hidden md:block text-left">
                     <p className="text-sm font-semibold text-gray-900">{user.name}</p>
                     <p className="text-xs text-gray-500">View profile</p>

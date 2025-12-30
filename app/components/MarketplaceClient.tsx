@@ -48,6 +48,7 @@ export default function MarketplaceClient() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [scrollY, setScrollY] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [scrollDirection, setScrollDirection] = useState<'up' | 'down'>('down');
   const [lastScrollY, setLastScrollY] = useState(0);
   const [heroVisible, setHeroVisible] = useState(true);
@@ -128,6 +129,16 @@ export default function MarketplaceClient() {
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    
+    // Get current user ID
+    try {
+      const userRaw = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+      if (userRaw) {
+        const user = JSON.parse(userRaw);
+        setCurrentUserId(user?.id || null);
+      }
+    } catch {}
+    
     fetch(`${API_BASE_URL}/products?t=${Date.now()}`, {
       cache: 'no-store',
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -142,18 +153,23 @@ export default function MarketplaceClient() {
         throw new Error('Invalid data format received from server');
       }
 
-      const mappedProducts = data.map((item: any) => ({
-        id: item.id,
-        name: item.title,
-        price: `${item.price} MAD`,
-        location: item.location || item.farmer?.address || 'Tunisia',
-        image: item.imageUrl ? `${API_BASE_URL}/uploads/${item.imageUrl}` : '',
-        description: item.description,
-        seller: item.vendeur || item.farmer?.name || 'Inconnu',
-        contact: item.phoneNumber,
-        userId: item.farmerId || item.farmer?.id,
-        createdAt: item.createdAt,
-      }));
+      const mappedProducts = data.map((item: any) => {
+        // Get seller name from vendeur field or farmer relation
+        const sellerName = item.vendeur || (item.farmer ? item.farmer.name : null);
+        
+        return {
+          id: item.id,
+          name: item.title,
+          price: `${item.price} MAD`,
+          location: item.location || item.farmer?.address || 'Non spécifié',
+          image: item.imageUrl ? `${API_BASE_URL}/uploads/${item.imageUrl}` : '',
+          description: item.description,
+          seller: sellerName || 'Vendeur',
+          contact: item.phoneNumber || item.farmer?.phoneNumber,
+          userId: item.farmerId || item.farmer?.id,
+          createdAt: item.createdAt,
+        };
+      });
       
       mappedProducts.sort((a: any, b: any) => b.id - a.id);
       setProducts(mappedProducts);
@@ -168,6 +184,12 @@ export default function MarketplaceClient() {
 
   const filtered = useMemo(() => {
     let items: Product[] = [...products];
+    
+    // Filter out current user's own products - they should only appear in "Mes Produits" page
+    if (currentUserId !== null) {
+      items = items.filter(p => p.userId !== currentUserId);
+    }
+    
     if (query) items = items.filter(p => p.name.toLowerCase().includes(query.toLowerCase()));
     if (location) items = items.filter(p => p.location.toLowerCase().includes(location.toLowerCase()));
 
@@ -175,7 +197,7 @@ export default function MarketplaceClient() {
     if (sortBy === 'price-desc') items = [...items].sort((a, b) => parseFloat(b.price || '0' as any) - parseFloat(a.price || '0' as any));
 
     return items;
-  }, [products, query, location, sortBy, category]);
+  }, [products, query, location, sortBy, category, currentUserId]);
 
   const total = filtered.length;
   const pages = Math.max(1, Math.ceil(total / perPage));
@@ -509,7 +531,7 @@ export default function MarketplaceClient() {
                 }`}
                 style={{ transitionDelay: `${idx * 80}ms` }}
               >
-                <ProductCard {...p} />
+                <ProductCard {...p} isOwner={currentUserId !== null && p.userId === currentUserId} />
               </div>
             ))}
           </div>

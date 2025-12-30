@@ -23,10 +23,23 @@ export default function RegisterPage() {
     let score = 0;
     if (password.length >= 8) score += 1;
     if (/[A-Z]/.test(password)) score += 1;
+    if (/[a-z]/.test(password)) score += 1;
     if (/[0-9]/.test(password)) score += 1;
     if (/[^A-Za-z0-9]/.test(password)) score += 1;
-    return score; // 0..4
+    return score; // 0..5
   }, [password]);
+
+  const passwordErrors = useMemo(() => {
+    const errors: string[] = [];
+    if (password.length < 8) errors.push('Au moins 8 caractères');
+    if (!/[a-z]/.test(password)) errors.push('Une lettre minuscule');
+    if (!/[A-Z]/.test(password)) errors.push('Une lettre majuscule');
+    if (!/[0-9]/.test(password)) errors.push('Un chiffre');
+    if (!/[^A-Za-z0-9]/.test(password)) errors.push('Un caractère spécial (!@#$%...)');
+    return errors;
+  }, [password]);
+
+  const isPasswordValid = passwordErrors.length === 0;
   // Simplified UI without heavy motion effects
 
  const handleSubmit = async (e: React.FormEvent) => {
@@ -36,6 +49,11 @@ export default function RegisterPage() {
 
   if (!agree) {
     setErrorMessage("Veuillez accepter les conditions d'utilisation.");
+    return;
+  }
+
+  if (!isPasswordValid) {
+    setErrorMessage("Le mot de passe ne respecte pas les critères de sécurité.");
     return;
   }
 
@@ -127,19 +145,69 @@ export default function RegisterPage() {
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
               <div className="relative">
-                <input id="password" value={password} onChange={e => setPassword(e.target.value)} type={showPassword ? 'text' : 'password'} placeholder="Minimum 8 caractères" required className="block w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 pr-16" />
+                <input id="password" value={password} onChange={e => setPassword(e.target.value)} type={showPassword ? 'text' : 'password'} placeholder="Minimum 8 caractères" required className={`block w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 pr-16 ${password && !isPasswordValid ? 'border-red-300 bg-red-50' : 'border-gray-300'}`} />
                 <button type="button" onClick={() => setShowPassword(s => !s)} className="absolute inset-y-0 right-2 pr-2 text-sm text-gray-600 hover:text-gray-800">{showPassword ? '🙈 Masquer' : '👁️ Afficher'}</button>
               </div>
 
+               {/* Barre de progression */}
                <div className="mt-3">
                  <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
                    <div
-                     className={`h-full rounded-full ${passwordStrength <= 1 ? 'bg-yellow-300' : passwordStrength <= 3 ? 'bg-green-400' : 'bg-green-600'}`}
-                     style={{ width: `${(passwordStrength / 4) * 100}%`, transition: 'width 300ms ease' }}
+                     className={`h-full rounded-full transition-all duration-300 ${
+                       passwordStrength <= 1 ? 'bg-red-400' : 
+                       passwordStrength <= 2 ? 'bg-orange-400' : 
+                       passwordStrength <= 3 ? 'bg-yellow-400' : 
+                       passwordStrength <= 4 ? 'bg-green-400' : 'bg-green-600'
+                     }`}
+                     style={{ width: `${(passwordStrength / 5) * 100}%` }}
                    />
                  </div>
-                 <div className="text-xs text-gray-500 mt-1">Force: {passwordStrength}/4</div>
+                 <div className="flex justify-between items-center mt-1">
+                   <span className="text-xs text-gray-500">
+                     Force: {passwordStrength === 0 ? 'Très faible' : passwordStrength <= 2 ? 'Faible' : passwordStrength <= 3 ? 'Moyen' : passwordStrength <= 4 ? 'Fort' : 'Très fort'}
+                   </span>
+                   <span className="text-xs text-gray-400">{passwordStrength}/5</span>
+                 </div>
                </div>
+
+               {/* Liste des critères de validation */}
+               {password && passwordErrors.length > 0 && (
+                 <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                   <p className="text-xs font-medium text-amber-800 mb-2">Le mot de passe doit contenir:</p>
+                   <ul className="space-y-1">
+                     {[
+                       { check: password.length >= 8, label: 'Au moins 8 caractères' },
+                       { check: /[a-z]/.test(password), label: 'Une lettre minuscule' },
+                       { check: /[A-Z]/.test(password), label: 'Une lettre majuscule' },
+                       { check: /[0-9]/.test(password), label: 'Un chiffre' },
+                       { check: /[^A-Za-z0-9]/.test(password), label: 'Un caractère spécial (!@#$%...)' }
+                     ].map((item, idx) => (
+                       <li key={idx} className={`flex items-center gap-2 text-xs ${item.check ? 'text-green-600' : 'text-amber-700'}`}>
+                         {item.check ? (
+                           <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                           </svg>
+                         ) : (
+                           <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                           </svg>
+                         )}
+                         {item.label}
+                       </li>
+                     ))}
+                   </ul>
+                 </div>
+               )}
+
+               {/* Message de succès si mot de passe valide */}
+               {password && isPasswordValid && (
+                 <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+                   <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                   </svg>
+                   <span className="text-xs text-green-700 font-medium">Mot de passe sécurisé ✓</span>
+                 </div>
+               )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -148,7 +216,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <button type="submit" disabled={!agree || loading} className={`w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-md bg-green-700 text-white font-medium hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition ${(!agree || loading) ? 'opacity-60 cursor-not-allowed' : ''}`}>
+              <button type="submit" disabled={!agree || loading || !isPasswordValid} className={`w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-md bg-green-700 text-white font-medium hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition ${(!agree || loading || !isPasswordValid) ? 'opacity-60 cursor-not-allowed' : ''}`}>
                 {loading && (
                   <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
